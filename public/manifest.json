@@ -1,0 +1,17 @@
+{
+  "name": "Barrioteca Acalencá",
+  "short_name": "Barrioteca",
+  "description": "App para gestionar la Barrioteca Acalencá",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#141414",
+  "theme_color": "#141414",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
