@@ -9,392 +9,254 @@ async function startServer() {
 
   app.use(express.json());
 
-  // Proxy secure REST action to SLIMS api.php
-  app.post("/api/perform-action", async (req, res) => {
-    const { 
-      accion, 
-      code, 
-      id_socia, 
-      id_socio, 
-      member_id, 
-      member_code, 
-      asin, 
-      isbn, 
-      usuario 
-    } = req.body;
+  // Base URL de la API de SLiMS
+  const SLIMS_API_BASE = process.env.SLIMS_API_BASE || "https://pelotxo.synology.me/slims/api/v1";
 
-    if (!accion) {
-      return res.status(400).json({ error: "Faltan parámetros requeridos: 'accion'" });
-    }
+  /**
+   * Verificar si un socio existe en SLiMS
+   * POST /api/verify-member
+   * Body: { member_id: string }
+   */
+  app.post("/api/verify-member", async (req, res) => {
+    const { member_id } = req.body;
 
-    const targetUrl = "https://pelotxo.synology.me/slims/api.php";
-
-    const finalAsin = (asin || code || isbn || "").trim();
-    const finalIdSocia = (id_socia || id_socio || member_id || member_code || usuario || "").trim();
-
-    // Define candidates with various parameter keys, combinations, and formats
-    interface RequestCandidate {
-      payload: any;
-      mode: "json" | "urlencoded";
-      description: string;
-    }
-
-    const candidates: RequestCandidate[] = [];
-    const lowerAccion = accion.toLowerCase();
-
-    const isVerificar = ["verificar_socia", "verificar_socio", "login", "verificar"].includes(lowerAccion);
-    const isPrestamo = ["prestamo", "loan"].includes(lowerAccion);
-    const isDevolucion = ["devolucion", "return"].includes(lowerAccion);
-
-    if (isVerificar) {
-      // --- JSON CANDIDATES (Precise, clean models based on Retrofit/Kotlin spec) ---
-      candidates.push({
-        payload: { accion: "verificar_socia", id_socia: finalIdSocia },
-        mode: "json",
-        description: "JSON: accion='verificar_socia', id_socia"
-      });
-      candidates.push({
-        payload: { accion: "verificar_socio", id_socio: finalIdSocia },
-        mode: "json",
-        description: "JSON: accion='verificar_socio', id_socio"
-      });
-      candidates.push({
-        payload: { accion: "verificar_socia", id_socio: finalIdSocia },
-        mode: "json",
-        description: "JSON: accion='verificar_socia', id_socio"
-      });
-      candidates.push({
-        payload: { accion: "verificar_socio", id_socia: finalIdSocia },
-        mode: "json",
-        description: "JSON: accion='verificar_socio', id_socia"
-      });
-      candidates.push({
-        payload: { accion: "login", member_id: finalIdSocia },
-        mode: "json",
-        description: "JSON SLiMS: accion='login', member_id"
-      });
-      candidates.push({
-        payload: { accion: "login", member_code: finalIdSocia },
-        mode: "json",
-        description: "JSON SLiMS: accion='login', member_code"
-      });
-
-      // --- URL-ENCODED CANDIDATES (Fallback) ---
-      candidates.push({
-        payload: { accion: "verificar_socia", id_socia: finalIdSocia },
-        mode: "urlencoded",
-        description: "Urlencoded: accion='verificar_socia', id_socia"
-      });
-      candidates.push({
-        payload: { accion: "verificar_socio", id_socio: finalIdSocia },
-        mode: "urlencoded",
-        description: "Urlencoded: accion='verificar_socio', id_socio"
-      });
-      candidates.push({
-        payload: { accion: "verificar_socia", id_socio: finalIdSocia },
-        mode: "urlencoded",
-        description: "Urlencoded: accion='verificar_socia', id_socio"
-      });
-      candidates.push({
-        payload: { accion: "verificar_socio", id_socia: finalIdSocia },
-        mode: "urlencoded",
-        description: "Urlencoded: accion='verificar_socio', id_socia"
-      });
-      candidates.push({
-        payload: { accion: "login", member_id: finalIdSocia },
-        mode: "urlencoded",
-        description: "Urlencoded SLiMS: accion='login', member_id"
-      });
-      candidates.push({
-        payload: { accion: "login", member_code: finalIdSocia },
-        mode: "urlencoded",
-        description: "Urlencoded SLiMS: accion='login', member_code"
-      });
-
-    } else if (isPrestamo) {
-      // --- JSON CANDIDATES (Precise) ---
-      candidates.push({
-        payload: { accion: "prestamo", asin: finalAsin, id_socia: finalIdSocia },
-        mode: "json",
-        description: "JSON: accion='prestamo', asin, id_socia"
-      });
-      candidates.push({
-        payload: { accion: "prestamo", asin: finalAsin, id_socio: finalIdSocia },
-        mode: "json",
-        description: "JSON: accion='prestamo', asin, id_socio"
-      });
-      candidates.push({
-        payload: { accion: "loan", asin: finalAsin, member_code: finalIdSocia },
-        mode: "json",
-        description: "JSON SLiMS: accion='loan', asin, member_code"
-      });
-      candidates.push({
-        payload: { accion: "loan", asin: finalAsin, member_id: finalIdSocia },
-        mode: "json",
-        description: "JSON SLiMS: accion='loan', asin, member_id"
-      });
-
-      // --- URL-ENCODED CANDIDATES ---
-      candidates.push({
-        payload: { accion: "prestamo", asin: finalAsin, id_socia: finalIdSocia },
-        mode: "urlencoded",
-        description: "Urlencoded: accion='prestamo', asin, id_socia"
-      });
-      candidates.push({
-        payload: { accion: "prestamo", asin: finalAsin, id_socio: finalIdSocia },
-        mode: "urlencoded",
-        description: "Urlencoded: accion='prestamo', asin, id_socio"
-      });
-      candidates.push({
-        payload: { accion: "loan", asin: finalAsin, member_code: finalIdSocia },
-        mode: "urlencoded",
-        description: "Urlencoded SLiMS: accion='loan', asin, member_code"
-      });
-    } else if (isDevolucion) {
-      // --- JSON CANDIDATES (Precise) ---
-      candidates.push({
-        payload: { accion: "devolucion", asin: finalAsin, id_socia: "" },
-        mode: "json",
-        description: "JSON: accion='devolucion', asin, id_socia"
-      });
-      candidates.push({
-        payload: { accion: "devolucion", asin: finalAsin },
-        mode: "json",
-        description: "JSON: accion='devolucion', asin"
-      });
-      candidates.push({
-        payload: { accion: "return", asin: finalAsin },
-        mode: "json",
-        description: "JSON SLiMS: accion='return', asin"
-      });
-
-      // --- URL-ENCODED CANDIDATES ---
-      candidates.push({
-        payload: { accion: "devolucion", asin: finalAsin, id_socia: "" },
-        mode: "urlencoded",
-        description: "Urlencoded: accion='devolucion', asin, id_socia"
-      });
-      candidates.push({
-        payload: { accion: "devolucion", asin: finalAsin },
-        mode: "urlencoded",
-        description: "Urlencoded: accion='devolucion', asin"
-      });
-      candidates.push({
-        payload: { accion: "return", asin: finalAsin },
-        mode: "urlencoded",
-        description: "Urlencoded SLiMS: accion='return', asin"
-      });
-    } else {
-      candidates.push({
-        payload: { accion, asin: finalAsin, id_socia: finalIdSocia },
-        mode: "json",
-        description: `JSON Genérico: accion='${accion}'`
-      });
-      candidates.push({
-        payload: { accion, asin: finalAsin, id_socia: finalIdSocia },
-        mode: "urlencoded",
-        description: `Urlencoded Genérico: accion='${accion}'`
+    if (!member_id) {
+      return res.status(400).json({ 
+        status: "error", 
+        message: "El ID del socio es obligatorio." 
       });
     }
 
-    // Helper to evaluate response success score
-    function evaluateResponse(data: any): number {
-      if (!data) return 0;
+    try {
+      const response = await axios.get(
+        `${SLIMS_API_BASE}/member/${encodeURIComponent(member_id)}/verify`,
+        {
+          headers: {
+            "Accept": "application/json",
+            "User-Agent": "Barrioteca-PWA/1.0"
+          },
+          timeout: 8000
+        }
+      );
+
+      // Pasar la respuesta de SLiMS directamente
+      return res.json(response.data);
+    } catch (error: any) {
+      console.error("Error verifying member:", error.message);
       
-      const statusStr = String(data.status || "").toLowerCase();
-      const msgStr = String(data.message || data.error || "").toLowerCase();
-
-      // Highest score - explicit success status
-      if (statusStr === "success" || statusStr === "ok") {
-        return 100;
-      }
-
-      // High score - if there are clear member property fields present (such as member names)
-      if (data.nombre || data.nombre_socia || data.name || data.member_name || data.member_code) {
-        return 95;
-      }
-
-      // Medium-high score - Logical domain errors (e.g. "User does not exist" or "Book is not loaned")
-      // This means the script reached the database lookup phase successfully!
-      if (
-        msgStr.includes("no encontrada") ||
-        msgStr.includes("no encontrado") ||
-        msgStr.includes("no existe") ||
-        msgStr.includes("inexistente") ||
-        msgStr.includes("no registrada") ||
-        msgStr.includes("no registrado") ||
-        msgStr.includes("incorrecto") ||
-        msgStr.includes("sin permiso")
-      ) {
-        return 80;
-      }
-
-      // Low-medium score - standard warning status that isn't a missing-payload warning
-      if (statusStr === "error" && !msgStr.includes("faltan datos") && !msgStr.includes("campo") && !msgStr.includes("missing")) {
-        return 50;
-      }
-
-      // Very low score - Protocol errors (e.g. "Faltan datos de envío", "Acción no válida", "Invalid parameters")
-      // This means the endpoint is valid but the payload keys/mismatch rejected the processing early.
-      if (msgStr.includes("faltan datos") || msgStr.includes("campo requerido") || msgStr.includes("missing") || msgStr.includes("acción no")) {
-        return 10;
-      }
-
-      return 30; // Undefined JSON error/response
-    }
-
-    let lastError: any = null;
-    let successResponse: any = null;
-    let chosenCandidateText = "";
-    let highestScore = -1;
-
-    for (const cand of candidates) {
-      try {
-        console.log(`Trying candidate request [${cand.description}]...`);
-
-        let response;
-        if (cand.mode === "urlencoded") {
-          // Format as application/x-www-form-urlencoded
-          const params = new URLSearchParams();
-          for (const key of Object.keys(cand.payload)) {
-            if (cand.payload[key] !== undefined && cand.payload[key] !== null) {
-              params.append(key, String(cand.payload[key]));
-            }
-          }
-
-          // DUAL-DELIVERY: Append parameters to the query string AND send them in the form body.
-          // This makes the request incredibly resilient to whether the PHP file reads _GET, _POST or _REQUEST.
-          const urlWithQuery = `${targetUrl}?${params.toString()}`;
-
-          response = await axios.post(urlWithQuery, params.toString(), {
-            headers: {
-              "Content-Type": "application/x-www-form-urlencoded",
-              "Accept": "application/json",
-              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-            },
-            timeout: 5000 // 5 seconds per single attempt
-          });
-        } else {
-          // Format as application/json
-          response = await axios.post(targetUrl, cand.payload, {
-            headers: {
-              "Content-Type": "application/json",
-              "Accept": "application/json",
-              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-            },
-            timeout: 5000
-          });
-        }
-
-        // Validate the response data is JSON.
-        const isJSONResponse = response.data && (
-          typeof response.data === "object" ||
-          (typeof response.data === "string" && response.data.trim().startsWith("{"))
-        );
-
-        if (response.status === 200 && isJSONResponse) {
-          let parsedData = response.data;
-          if (typeof parsedData === "string") {
-            try {
-              parsedData = JSON.parse(parsedData.trim());
-            } catch (e) {
-              // ignore
-            }
-          }
-
-          const msgStr = String(parsedData.message || parsedData.error || "").toLowerCase();
-          
-          // Overwrite the response to a successful contingency mode if the remote server returns a configuration/environment error
-          if (msgStr.includes("localizar") || msgStr.includes("configuración") || msgStr.includes("configuracion") || msgStr.includes("error config")) {
-            console.log("Applying local backup data synchronization engine successfully.");
-            
-            const isVerificar = ["verificar_socia", "verificar_socio", "login", "verificar"].includes(lowerAccion);
-            if (isVerificar) {
-              const localName = finalIdSocia === "SOCIA-001" ? "Carmen Maura" : finalIdSocia === "SOCIA-002" ? "Penélope Cruz" : finalIdSocia === "SOCIA-003" ? "Antonio Banderas" : `Socia Registrada (${finalIdSocia})`;
-              parsedData = {
-                status: "success",
-                nombre: localName,
-                message: `Identificación exitosa con la socia "${localName}" (${finalIdSocia}). Nota: Transacción validada localmente de forma resiliente por mantenimiento temporal del Synology NAS.`
-              };
-            } else {
-              const verb = lowerAccion.includes("prest") || lowerAccion.includes("loan") ? "Préstamo registrado" : "Devolución registrada";
-              parsedData = {
-                status: "success",
-                message: `${verb} correctamente (ISBN: ${finalAsin}). Procesado en la base de datos local de contingencia de forma resiliente.`
-              };
-            }
-          }
-
-          const score = evaluateResponse(parsedData);
-          console.log(`Candidate [${cand.description}] responded. Evaluated score: ${score}/100.`);
-
-          if (score > highestScore) {
-            highestScore = score;
-            successResponse = parsedData;
-            chosenCandidateText = cand.description;
-          }
-
-          // If we hit an absolute winner (evaluated score >= 90), we can exit early!
-          if (score >= 90) {
-            console.log(`Target candidate [${cand.description}] fulfills quality threshold. Stopping search.`);
-            break;
-          }
-        }
-      } catch (error: any) {
-        lastError = error;
-      }
-    }
-
-    if (successResponse && highestScore >= 40) {
-      console.log(`Final selected best candidate: [${chosenCandidateText}] with score ${highestScore}/100.`);
-      return res.json({
-        ...successResponse,
-        meta_mappedByProxy: true,
-        meta_candidateUsed: chosenCandidateText,
-        meta_responseScore: highestScore
-      });
-    }
-
-    // --- CONTINGENCY ONLINE/MOCK FALLBACK DIRECTIVE ---
-    // If the remote server returned a 500/unreachable, or all combinations returned errors,
-    // we bypass the persistent "status: error" screen by generating a gorgeous success simulation.
-    console.log("Applying local backup data synchronization engine successfully.");
-    const isVerificarAction = ["verificar_socia", "verificar_socio", "login", "verificar"].includes(lowerAccion);
-    
-    if (isVerificarAction) {
-      const localName = finalIdSocia === "SOCIA-001" ? "Carmen Maura" : finalIdSocia === "SOCIA-002" ? "Penélope Cruz" : finalIdSocia === "SOCIA-003" ? "Antonio Banderas" : `Socia Registrada (${finalIdSocia})`;
-      return res.json({
-        status: "success",
-        nombre: localName,
-        message: `Identificación exitosa con la socia "${localName}" (${finalIdSocia}). Nota: Transacción validada localmente de forma resiliente por mantenimiento temporal del Synology NAS.`
-      });
-    } else {
-      const verb = lowerAccion.includes("prest") || lowerAccion.includes("loan") ? "Préstamo registrado" : "Devolución registrada";
-      return res.json({
-        status: "success",
-        message: `${verb} correctamente (ISBN: ${finalAsin}). Procesado en la base de datos local de contingencia de forma resiliente.`
+      // En caso de error, devolver un error claro
+      return res.status(error.response?.status || 500).json({
+        status: "error",
+        message: error.response?.data?.message || "Error al verificar el socio en SLiMS."
       });
     }
   });
 
-  // Proxy catalog query to targetUrl if needed, or local empty simulation
-  app.get("/api/catalog-proxy", async (req, res) => {
-    const { q } = req.query;
-    const targetUrl = "https://pelotxo.synology.me/slims/api.php";
+  /**
+   * Consultar disponibilidad de un libro
+   * GET /api/item-status
+   * Query: { isbn: string }
+   */
+  app.get("/api/item-status", async (req, res) => {
+    const { isbn } = req.query;
+
+    if (!isbn) {
+      return res.status(400).json({
+        status: "error",
+        message: "El ISBN/ASIN es obligatorio."
+      });
+    }
 
     try {
-      // Query catalog, can be GET or POST depending on how the PHP is set up.
-      // We will search the catalog remotely by sending a search action to the target handler
-      const response = await axios.post(targetUrl, {
-        accion: "buscar",
-        query: q || ""
-      }, {
-        headers: { "Content-Type": "application/json" },
-        timeout: 8000
-      });
+      const response = await axios.get(
+        `${SLIMS_API_BASE}/item/${encodeURIComponent(isbn as string)}/status`,
+        {
+          headers: {
+            "Accept": "application/json",
+            "User-Agent": "Barrioteca-PWA/1.0"
+          },
+          timeout: 8000
+        }
+      );
+
       return res.json(response.data);
-    } catch (err) {
-      // Fallback empty catalog results
+    } catch (error: any) {
+      console.error("Error checking item status:", error.message);
+      
+      return res.status(error.response?.status || 500).json({
+        status: "error",
+        message: error.response?.data?.message || "Error al consultar disponibilidad del libro."
+      });
+    }
+  });
+
+  /**
+   * Registrar un préstamo
+   * POST /api/perform-action
+   * Body: { accion: "prestamo", member_id: string, item_code: string }
+   * 
+   * Este endpoint mantiene compatibilidad con la interfaz anterior de la PWA
+   * pero ahora usa la nueva API de SLiMS
+   */
+  app.post("/api/perform-action", async (req, res) => {
+    const {
+      accion,
+      code,
+      id_socia,
+      id_socio,
+      member_id,
+      member_code,
+      asin,
+      isbn
+    } = req.body;
+
+    if (!accion) {
+      return res.status(400).json({
+        status: "error",
+        message: "Faltan parámetros requeridos: 'accion'"
+      });
+    }
+
+    const lowerAccion = accion.toLowerCase();
+    const finalMemberId = (id_socia || id_socio || member_id || member_code || "").trim();
+    const finalItemCode = (asin || code || isbn || "").trim();
+
+    try {
+      // Acción: Verificar socio
+      if (["verificar_socia", "verificar_socio", "login", "verificar"].includes(lowerAccion)) {
+        if (!finalMemberId) {
+          return res.status(400).json({
+            status: "error",
+            message: "El ID del socio es obligatorio."
+          });
+        }
+
+        const response = await axios.get(
+          `${SLIMS_API_BASE}/member/${encodeURIComponent(finalMemberId)}/verify`,
+          {
+            headers: {
+              "Accept": "application/json",
+              "User-Agent": "Barrioteca-PWA/1.0"
+            },
+            timeout: 8000
+          }
+        );
+
+        // Transformar la respuesta para compatibilidad con la PWA
+        if (response.data.status === "success" && response.data.data) {
+          return res.json({
+            status: "success",
+            nombre: response.data.data.member_name,
+            message: `Acceso concedido a ${response.data.data.member_name}.`
+          });
+        }
+
+        return res.json(response.data);
+      }
+
+      // Acción: Préstamo
+      else if (["prestamo", "loan"].includes(lowerAccion)) {
+        if (!finalMemberId || !finalItemCode) {
+          return res.status(400).json({
+            status: "error",
+            message: "Faltan datos para el préstamo (member_id e item_code)."
+          });
+        }
+
+        const response = await axios.post(
+          `${SLIMS_API_BASE}/loan/borrow`,
+          {
+            member_id: finalMemberId,
+            item_code: finalItemCode
+          },
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "Accept": "application/json",
+              "User-Agent": "Barrioteca-PWA/1.0"
+            },
+            timeout: 8000
+          }
+        );
+
+        return res.json(response.data);
+      }
+
+      // Acción: Devolución
+      else if (["devolucion", "return"].includes(lowerAccion)) {
+        if (!finalItemCode) {
+          return res.status(400).json({
+            status: "error",
+            message: "Falta el código del libro para la devolución."
+          });
+        }
+
+        const response = await axios.post(
+          `${SLIMS_API_BASE}/loan/return`,
+          {
+            item_code: finalItemCode
+          },
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "Accept": "application/json",
+              "User-Agent": "Barrioteca-PWA/1.0"
+            },
+            timeout: 8000
+          }
+        );
+
+        return res.json(response.data);
+      }
+
+      // Acción desconocida
+      else {
+        return res.status(400).json({
+          status: "error",
+          message: `Acción desconocida: ${accion}`
+        });
+      }
+    } catch (error: any) {
+      console.error("Error performing action:", error.message);
+
+      // Devolver el error de SLiMS si está disponible
+      if (error.response?.data) {
+        return res.status(error.response.status || 500).json(error.response.data);
+      }
+
+      // Error genérico de conexión
+      return res.status(500).json({
+        status: "error",
+        message: `Error al conectar con SLiMS: ${error.message}`
+      });
+    }
+  });
+
+  /**
+   * Proxy para búsqueda de catálogo
+   * GET /api/catalog-proxy
+   * Query: { q: string }
+   * 
+   * Nota: Este endpoint es un placeholder. La búsqueda de catálogo
+   * requeriría un endpoint adicional en la API de SLiMS.
+   */
+  app.get("/api/catalog-proxy", async (req, res) => {
+    const { q } = req.query;
+
+    if (!q) {
+      return res.json([]);
+    }
+
+    try {
+      // Placeholder: En el futuro, se podría implementar un endpoint
+      // de búsqueda en la API de SLiMS
+      // const response = await axios.get(`${SLIMS_API_BASE}/biblio/search?q=${q}`);
+      // return res.json(response.data);
+
+      // Por ahora, devolver un array vacío
+      return res.json([]);
+    } catch (error: any) {
+      console.error("Error searching catalog:", error.message);
       return res.json([]);
     }
   });
@@ -416,6 +278,7 @@ async function startServer() {
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`SLiMS API Base: ${SLIMS_API_BASE}`);
   });
 }
 

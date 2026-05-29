@@ -128,26 +128,18 @@ export default function App() {
 
     setIsLoggingIn(true);
     try {
-      const payload: any = {
-        accion: 'verificar_socia',
-        id_socia: term
-      };
-      if (!isQr && password) {
-        payload.password = password;
-      }
-
-      const response = await fetch('https://pelotxo.synology.me/slims/api.php', {
+      const response = await fetch('/api/verify-member', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({ member_id: term })
       });
 
       const serverData = await response.json();
       
-      if (serverData && (serverData.status === 'success' || serverData.status === 'ok' || serverData.success || serverData.status === 'true')) {
-        const nombreDevuelto = serverData.nombre || serverData.name || serverData.usuario || serverData.member_name || `Socia ${term}`;
+      if (serverData && serverData.status === 'success' && serverData.data) {
+        const nombreDevuelto = serverData.data.member_name || `Socia ${term}`;
         
         const existingUser = users.find(u => u.barcode === term || u.id === term);
         let userObjId = term;
@@ -176,7 +168,7 @@ export default function App() {
           setLoginSuccess(null);
         }, 1200);
       } else {
-        const errMsg = serverData.message || serverData.error || 'No se pudo verificar esta socia en el servidor.';
+        const errMsg = serverData.message || 'No se pudo verificar esta socia en el servidor.';
         setLoginError(errMsg);
       }
     } catch (err: any) {
@@ -250,7 +242,7 @@ export default function App() {
         payload.id_socia = prestamoMemberId || activeUser?.barcode || sessionStorage.getItem('id_socia') || "";
       }
 
-      const response = await fetch('https://pelotxo.synology.me/slims/api.php', {
+      const response = await fetch('/api/perform-action', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -261,7 +253,7 @@ export default function App() {
       const serverData = await response.json();
       
       // The user expects a JSON response containing {"status": "success"} or similar
-      if (serverData && (serverData.status === 'success' || serverData.status === 'ok' || serverData.status === 'true' || serverData.success)) {
+      if (serverData && serverData.status === 'success') {
         setApiResponse({
           status: 'success',
           message: serverData.message || `Operación de ${actionType === 'prestamo' ? 'préstamo' : 'devolución'} completada para ${activeUser ? activeUser.nombre : 'socia'}.`
