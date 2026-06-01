@@ -23,7 +23,7 @@ async function startServer() {
     if (!member_id) {
       return res.status(400).json({ 
         status: "error", 
-        message: "El ID del socio es obligatorio." 
+        message: "El ID de la socia es obligatorio." 
       });
     }
 
@@ -47,7 +47,7 @@ async function startServer() {
       // En caso de error, devolver un error claro
       return res.status(error.response?.status || 500).json({
         status: "error",
-        message: error.response?.data?.message || "Error al verificar el socio en SLiMS."
+        message: error.response?.data?.message || "Error al verificar a la socia."
       });
     }
   });
