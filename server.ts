@@ -248,13 +248,25 @@ async function startServer() {
     }
 
     try {
-      // Placeholder: En el futuro, se podría implementar un endpoint
-      // de búsqueda en la API de SLiMS
-      // const response = await axios.get(`${SLIMS_API_BASE}/biblio/search?q=${q}`);
-      // return res.json(response.data);
+      const response = await axios.get(`${SLIMS_API_BASE}/biblio/search?q=${encodeURIComponent(q as string)}`, {
+        headers: {
+          "Accept": "application/json",
+          "User-Agent": "Barrioteca-PWA/1.0"
+        },
+        timeout: 8000
+      });
+      
+      // Mapear los resultados al formato que espera el componente CatalogSearch.tsx
+      const results = response.data.map((item: any) => ({
+        id: item.biblio_id,
+        title: item.title,
+        author: item.author || "Autor Desconocido",
+        isbn: item.isbn_issn,
+        status: item.is_available ? "disponible" : "prestado",
+        image: item.image
+      }));
 
-      // Por ahora, devolver un array vacío
-      return res.json([]);
+      return res.json(results);
     } catch (error: any) {
       console.error("Error searching catalog:", error.message);
       return res.json([]);

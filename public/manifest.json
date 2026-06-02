@@ -1,8 +1,9 @@
 {
   "name": "Barrioteca Acalencá",
   "short_name": "Barrioteca",
-  "description": "App para gestionar la Barrioteca Acalencá",
+  "description": "Aplicación de gestión de préstamos de la Barrioteca de Acalencá",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#141414",
   "theme_color": "#141414",
