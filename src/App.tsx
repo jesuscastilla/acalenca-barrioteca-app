@@ -20,7 +20,8 @@ import {
   UserPlus,
   Users,
   Check,
-  HelpCircle
+  HelpCircle,
+  X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Scanner } from './components/Scanner';
@@ -124,12 +125,22 @@ export default function App() {
       const response = await fetch('/api/verify-member', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
         body: JSON.stringify({ member_id: term })
       });
 
-      const serverData = await response.json();
+      let serverData;
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        serverData = await response.json();
+      } else {
+        if (response.status === 404) {
+          throw new Error('Socia no encontrada (404)');
+        }
+        throw new Error(`Respuesta no válida del servidor (${response.status})`);
+      }
       
       if (serverData && serverData.status === 'success' && serverData.data) {
         const nombreDevuelto = serverData.data.member_name || `Socia ${term}`;
@@ -226,12 +237,22 @@ export default function App() {
       const response = await fetch('/api/perform-action', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
         body: JSON.stringify(payload)
       });
 
-      const serverData = await response.json();
+      let serverData;
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        serverData = await response.json();
+      } else {
+        if (response.status === 404) {
+          throw new Error('Registro no encontrado (404)');
+        }
+        throw new Error(`Respuesta no válida del servidor (${response.status})`);
+      }
       
       if (serverData && serverData.status === 'success') {
         setApiResponse({
@@ -334,24 +355,33 @@ export default function App() {
         <AnimatePresence>
           {isInstallable && (
             <motion.div 
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="mb-6 bg-amber-500 text-black p-4 rounded-3xl shadow-xl flex items-center justify-between gap-4"
+              initial={{ opacity: 0, y: 50, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.95 }}
+              className="fixed bottom-24 left-4 right-4 z-[100] max-w-sm mx-auto bg-amber-500 text-black p-4 rounded-3xl shadow-2xl flex items-center justify-between gap-3 border border-amber-400/50"
             >
               <div className="flex items-center gap-3">
-                <Smartphone size={24} />
+                <Smartphone size={24} className="shrink-0" />
                 <div>
                   <h4 className="font-bold text-sm">Instalar Barrioteca</h4>
-                  <p className="text-xs opacity-80">Añade la app a tu pantalla de inicio</p>
+                  <p className="text-xs opacity-90 leading-tight mt-0.5">Añade la app a tu pantalla de inicio para un acceso rápido</p>
                 </div>
               </div>
-              <button 
-                onClick={handleInstallClick}
-                className="bg-black text-white px-4 py-2 rounded-xl text-xs font-bold uppercase"
-              >
-                Instalar
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                <button 
+                  onClick={handleInstallClick}
+                  className="bg-black text-white px-3 py-2 rounded-xl text-xs font-bold uppercase shadow-sm"
+                >
+                  Instalar
+                </button>
+                <button 
+                  onClick={() => setIsInstallable(false)}
+                  className="p-2 bg-amber-400/30 hover:bg-amber-400/50 rounded-xl transition-colors text-black"
+                  aria-label="Cerrar"
+                >
+                  <X size={16} />
+                </button>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
