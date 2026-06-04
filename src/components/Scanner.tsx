@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
-import { Camera, RefreshCw, Check, Radio } from 'lucide-react';
+import { Camera, RefreshCw, Radio, X } from 'lucide-react';
 
 interface ScannerProps {
   onScanSuccess: (isbn: string) => void;
@@ -17,11 +17,17 @@ export const Scanner: React.FC<ScannerProps> = ({ onScanSuccess }) => {
   const qrCodeInstanceRef = useRef<Html5Qrcode | null>(null);
 
   useEffect(() => {
+    // Detectar cámaras disponibles al cargar el componente
     Html5Qrcode.getCameras()
       .then((devices) => {
         if (devices && devices.length > 0) {
           setCameras(devices);
-          const rearCam = devices.find(d => d.label.toLowerCase().includes('back') || d.label.toLowerCase().includes('trasera') || d.label.toLowerCase().includes('environment'));
+          // Intentar seleccionar la cámara trasera por defecto
+          const rearCam = devices.find(d => 
+            d.label.toLowerCase().includes('back') || 
+            d.label.toLowerCase().includes('trasera') || 
+            d.label.toLowerCase().includes('environment')
+          );
           setSelectedCameraId(rearCam ? rearCam.id : devices[0].id);
         }
       })
@@ -29,6 +35,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onScanSuccess }) => {
         console.warn("No se pudieron detectar cámaras:", err);
       });
 
+    // Limpiar instancia del escáner al desmontar el componente
     return () => {
       if (qrCodeInstanceRef.current) {
         if (qrCodeInstanceRef.current.isScanning) {
@@ -49,6 +56,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onScanSuccess }) => {
     }
 
     try {
+      // Si ya hay una instancia activa, detenerla antes de iniciar una nueva
       if (qrCodeInstanceRef.current) {
         if (qrCodeInstanceRef.current.isScanning) {
           await qrCodeInstanceRef.current.stop();
@@ -68,6 +76,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onScanSuccess }) => {
         {
           fps: 15,
           qrbox: (videoWidth, videoHeight) => {
+            // Definir un área de escaneo rectangular optimizada para códigos de barras
             const boxWidth = Math.min(videoWidth * 0.85, 340);
             const boxHeight = Math.min(videoHeight * 0.45, 140);
             return { width: Math.round(boxWidth), height: Math.round(boxHeight) };
@@ -75,16 +84,20 @@ export const Scanner: React.FC<ScannerProps> = ({ onScanSuccess }) => {
           aspectRatio: 1.333333
         },
         (decodedText) => {
+          // Éxito al escanear
           setSuccess(decodedText);
           onScanSuccess(decodedText);
           
+          // Vibración táctil si el dispositivo lo soporta
           if (navigator.vibrate) {
             try { navigator.vibrate(120); } catch(e) {}
           }
           
           handleStop();
         },
-        () => {}
+        () => {
+          // Callback de error de escaneo (ignorado para no saturar la consola)
+        }
       );
 
     } catch (err: any) {
@@ -158,7 +171,11 @@ export const Scanner: React.FC<ScannerProps> = ({ onScanSuccess }) => {
             </div>
           </div>
           
-          {cameras.length > 1 && (
+          {isScanning ? (
+            <button onClick={handleStop} className="p-2 bg-red-50 text-red-500 rounded-xl">
+              <X size={18} />
+            </button>
+          ) : cameras.length > 1 && (
             <select
               value={selectedCameraId}
               onChange={(e) => setSelectedCameraId(e.target.value)}

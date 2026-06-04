@@ -1,1 +1,1 @@
-{"name":"Barrioteca Acalencá","description":"Aplicación móvil para SLIMS por Pelotxo, con escáner de ISBN e identificación de socias.","requestFramePermissions":["camera"],"majorCapabilities":["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]}
+{"name":"Barrioteca Acalencá","description":"Aplicación móvil para SLIMS, con escáner de ISBN e identificación de socias.","requestFramePermissions":["camera"]}

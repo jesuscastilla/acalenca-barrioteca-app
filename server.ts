@@ -3,19 +3,23 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import axios from "axios";
 
+/**
+ * Función principal para iniciar el servidor de la PWA
+ * Este servidor actúa como proxy entre la PWA y la API de SLiMS en el NAS Synology
+ */
 async function startServer() {
   const app = express();
   const PORT = 3000;
 
   app.use(express.json());
 
-  // Base URL de la API de SLiMS
-  const SLIMS_API_BASE = process.env.SLIMS_API_BASE || "https://pelotxo.synology.me/slims/api/v1";
+  // URL base de la API de SLiMS en el NAS Synology
+  const SLIMS_API_BASE = process.env.SLIMS_API_BASE || "https://pelotxo.synology.me/acalenca-barrioteca/api/v1";
 
   /**
-   * Verificar si un socio existe en SLiMS
+   * Verificar si una socia existe en SLiMS
    * POST /api/verify-member
-   * Body: { member_id: string }
+   * Cuerpo: { member_id: string }
    */
   app.post("/api/verify-member", async (req, res) => {
     const { member_id } = req.body;
@@ -39,12 +43,11 @@ async function startServer() {
         }
       );
 
-      // Pasar la respuesta de SLiMS directamente
+      // Reenviar la respuesta de SLiMS directamente
       return res.json(response.data);
     } catch (error: any) {
-      console.error("Error verifying member:", error.message);
+      console.error("Error al verificar socia:", error.message);
       
-      // En caso de error, devolver un error claro
       return res.status(error.response?.status || 500).json({
         status: "error",
         message: error.response?.data?.message || "Error al verificar a la socia."
@@ -55,7 +58,7 @@ async function startServer() {
   /**
    * Consultar disponibilidad de un libro
    * GET /api/item-status
-   * Query: { isbn: string }
+   * Parámetros: { isbn: string }
    */
   app.get("/api/item-status", async (req, res) => {
     const { isbn } = req.query;
@@ -81,7 +84,7 @@ async function startServer() {
 
       return res.json(response.data);
     } catch (error: any) {
-      console.error("Error checking item status:", error.message);
+      console.error("Error al consultar estado del item:", error.message);
       
       return res.status(error.response?.status || 500).json({
         status: "error",
@@ -91,12 +94,11 @@ async function startServer() {
   });
 
   /**
-   * Registrar un préstamo
+   * Registrar una operación (Préstamo o Devolución)
    * POST /api/perform-action
-   * Body: { accion: "prestamo", member_id: string, item_code: string }
+   * Cuerpo: { accion: "prestamo" | "devolucion", member_id: string, item_code: string }
    * 
-   * Este endpoint mantiene compatibilidad con la interfaz anterior de la PWA
-   * pero ahora usa la nueva API de SLiMS
+   * Este endpoint unificado mantiene compatibilidad con la interfaz de la PWA
    */
   app.post("/api/perform-action", async (req, res) => {
     const {
@@ -118,16 +120,17 @@ async function startServer() {
     }
 
     const lowerAccion = accion.toLowerCase();
+    // Normalizar identificadores para manejar diferentes versiones de la interfaz
     const finalMemberId = (id_socia || id_socio || member_id || member_code || "").trim();
     const finalItemCode = (asin || code || isbn || "").trim();
 
     try {
-      // Acción: Verificar socio
+      // Acción: Verificar socia
       if (["verificar_socia", "verificar_socio", "login", "verificar"].includes(lowerAccion)) {
         if (!finalMemberId) {
           return res.status(400).json({
             status: "error",
-            message: "El ID del socio es obligatorio."
+            message: "El ID de la socia es obligatorio."
           });
         }
 
@@ -142,12 +145,13 @@ async function startServer() {
           }
         );
 
-        // Transformar la respuesta para compatibilidad con la PWA
+        // Transformar la respuesta para compatibilidad con el frontend de la PWA
         if (response.data.status === "success" && response.data.data) {
           return res.json({
             status: "success",
             nombre: response.data.data.member_name,
-            message: `Acceso concedido a ${response.data.data.member_name}.`
+            message: `Acceso concedido a ${response.data.data.member_name}.`,
+            data: response.data.data
           });
         }
 
@@ -159,7 +163,7 @@ async function startServer() {
         if (!finalMemberId || !finalItemCode) {
           return res.status(400).json({
             status: "error",
-            message: "Faltan datos para el préstamo (member_id e item_code)."
+            message: "Faltan datos para el préstamo (ID de socia y código de libro)."
           });
         }
 
@@ -209,7 +213,7 @@ async function startServer() {
         return res.json(response.data);
       }
 
-      // Acción desconocida
+      // Acción no reconocida
       else {
         return res.status(400).json({
           status: "error",
@@ -217,14 +221,14 @@ async function startServer() {
         });
       }
     } catch (error: any) {
-      console.error("Error performing action:", error.message);
+      console.error("Error al ejecutar acción:", error.message);
 
-      // Devolver el error de SLiMS si está disponible
+      // Devolver el error específico de SLiMS si existe
       if (error.response?.data) {
         return res.status(error.response.status || 500).json(error.response.data);
       }
 
-      // Error genérico de conexión
+      // Error genérico de red o servidor
       return res.status(500).json({
         status: "error",
         message: `Error al conectar con SLiMS: ${error.message}`
@@ -233,12 +237,9 @@ async function startServer() {
   });
 
   /**
-   * Proxy para búsqueda de catálogo
+   * Proxy para búsqueda en el catálogo
    * GET /api/catalog-proxy
-   * Query: { q: string }
-   * 
-   * Nota: Este endpoint es un placeholder. La búsqueda de catálogo
-   * requeriría un endpoint adicional en la API de SLiMS.
+   * Parámetros: { q: string }
    */
   app.get("/api/catalog-proxy", async (req, res) => {
     const { q } = req.query;
@@ -256,24 +257,24 @@ async function startServer() {
         timeout: 8000
       });
       
-      // Mapear los resultados al formato que espera el componente CatalogSearch.tsx
+      // Mapear resultados al formato esperado por CatalogSearch.tsx
       const results = response.data.map((item: any) => ({
         id: item.biblio_id,
         title: item.title,
-        author: item.author || "Autor Desconocido",
+        author: item.author || "Autora Desconocida",
         isbn: item.isbn_issn,
-        status: item.is_available ? "disponible" : "prestado",
+        status: item.is_available ? "disponible" : "prestada",
         image: item.image
       }));
 
       return res.json(results);
     } catch (error: any) {
-      console.error("Error searching catalog:", error.message);
+      console.error("Error al buscar en catálogo:", error.message);
       return res.json([]);
     }
   });
 
-  // Vite middleware for development
+  // Configuración de Vite para desarrollo
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
@@ -281,6 +282,7 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
+    // Servir archivos estáticos en producción
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
@@ -289,8 +291,8 @@ async function startServer() {
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-    console.log(`SLiMS API Base: ${SLIMS_API_BASE}`);
+    console.log(`Servidor PWA ejecutándose en http://localhost:${PORT}`);
+    console.log(`Conectado a la API de SLiMS en: ${SLIMS_API_BASE}`);
   });
 }
 

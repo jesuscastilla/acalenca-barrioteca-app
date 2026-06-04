@@ -9,10 +9,11 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 );
 
+// Registro del Service Worker para habilitar capacidades de PWA
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').catch((err) => {
-      console.error('Service worker registration failed', err);
+      console.error('El registro del Service Worker ha fallado:', err);
     });
   });
 }

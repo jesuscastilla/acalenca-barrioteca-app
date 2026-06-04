@@ -18,6 +18,7 @@ export const CatalogSearch: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    // Implementar un pequeño retraso (debounce) para no saturar el servidor en cada pulsación
     const delayDebounceFn = setTimeout(() => {
       if (query.trim()) {
         searchCatalog();
@@ -32,6 +33,7 @@ export const CatalogSearch: React.FC = () => {
   const searchCatalog = async () => {
     setLoading(true);
     try {
+      // Llamada al proxy de Node que a su vez consulta la API de SLiMS
       const response = await axios.get(`/api/catalog-proxy?q=${encodeURIComponent(query)}`);
       setResults(response.data);
     } catch (error) {

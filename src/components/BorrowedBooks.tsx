@@ -14,6 +14,9 @@ interface BorrowedBooksProps {
   books: Book[];
 }
 
+/**
+ * Componente para mostrar la lista de libros que una socia tiene actualmente en préstamo
+ */
 export const BorrowedBooks: React.FC<BorrowedBooksProps> = ({ books }) => {
   if (books.length === 0) {
     return (
@@ -56,7 +59,7 @@ export const BorrowedBooks: React.FC<BorrowedBooksProps> = ({ books }) => {
               </div>
             </div>
 
-            {/* Aesthetic detail: vertical line */}
+            {/* Detalle estético: línea vertical indicadora */}
             <div className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-amber-200 rounded-r-full group-hover:bg-amber-400 transition-all"></div>
           </motion.div>
         ))}

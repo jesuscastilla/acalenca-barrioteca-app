@@ -48,6 +48,10 @@ interface TransactionLog {
   bookAuthor?: string;
 }
 
+/**
+ * Componente principal de la PWA Barrioteca Acalencá
+ * Gestiona la navegación, el estado de las socias y las operaciones de préstamo/devolución
+ */
 export default function App() {
   const [view, setView] = useState<View>('dashboard');
   const [settingsSubView, setSettingsSubView] = useState<'socia' | 'help'>('socia');
@@ -57,7 +61,7 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
 
-  // Users state with default testing options
+  // Estado de socias con opciones de prueba por defecto
   const [users, setUsers] = useState<LibraryUser[]>(() => {
     const saved = localStorage.getItem('barrioteca_users');
     if (saved) return JSON.parse(saved);
@@ -67,6 +71,7 @@ export default function App() {
       { id: '3', nombre: 'Antonio Banderas (Socia Pruebas)', barcode: 'SOCIA-003' }
     ];
   });
+  
   const [activeUserId, setActiveUserId] = useState<string>(() => {
     return localStorage.getItem('barrioteca_active_user_id') || '';
   });
@@ -75,25 +80,24 @@ export default function App() {
     return localStorage.getItem('barrioteca_prestamo_member_id') || '';
   });
 
-  const [newUserName, setNewUserName] = useState('');
-  const [newUserBarcode, setNewUserBarcode] = useState('');
-  const [showAddUserForm, setShowAddUserForm] = useState(false);
-
-  // Simplified login states
+  // Estados de inicio de sesión
   const [loginInput, setLoginInput] = useState('');
   const [loginError, setLoginError] = useState<string | null>(null);
   const [loginSuccess, setLoginSuccess] = useState<string | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
+  // Historial de transacciones
   const [logs, setLogs] = useState<TransactionLog[]>(() => {
     const saved = localStorage.getItem('barrioteca_logs');
     return saved ? JSON.parse(saved) : [];
   });
+  
   const [apiResponse, setApiResponse] = useState<{ status: string; message?: string } | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstallable, setIsInstallable] = useState(false);
 
+  // Gestión de instalación PWA
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: any) => {
       e.preventDefault();
@@ -113,8 +117,12 @@ export default function App() {
       setIsInstallable(false);
     }
   };
+  
   const activeUser = users.find(u => u.id === activeUserId);
 
+  /**
+   * Verificar la identidad de una socia contra el servidor SLiMS
+   */
   const handleLogin = async (term: string) => {
     setLoginError(null);
     setLoginSuccess(null);
@@ -182,7 +190,7 @@ export default function App() {
     }
   };
 
-  // Save users & logs to localStorage
+  // Persistencia de datos en localStorage
   useEffect(() => {
     localStorage.setItem('barrioteca_users', JSON.stringify(users));
   }, [users]);
@@ -195,12 +203,13 @@ export default function App() {
     localStorage.setItem('barrioteca_prestamo_member_id', prestamoMemberId);
   }, [prestamoMemberId]);
 
-  // Save logs to localStorage
   useEffect(() => {
     localStorage.setItem('barrioteca_logs', JSON.stringify(logs));
   }, [logs]);
 
-  // Function to execute REST action to API (via safe Node server-side proxy)
+  /**
+   * Ejecutar una operación de préstamo o devolución en el servidor SLiMS
+   */
   const executeRestAction = async (codeValue: string, actionType: ActionType) => {
     if (!codeValue.trim()) return;
     
@@ -210,6 +219,8 @@ export default function App() {
 
     let bookTitle: string | undefined = undefined;
     let bookAuthor: string | undefined = undefined;
+    
+    // Consultar metadatos del libro (opcional, para el historial)
     try {
       const cleanCode = codeValue.replace(/[-\s]/g, '').trim();
       if (cleanCode.length >= 8) {
@@ -217,11 +228,11 @@ export default function App() {
         if (bookResponse.data && bookResponse.data.items && bookResponse.data.items.length > 0) {
           const info = bookResponse.data.items[0].volumeInfo;
           bookTitle = info.title;
-          bookAuthor = info.authors ? info.authors.join(', ') : 'Autor Desconocido';
+          bookAuthor = info.authors ? info.authors.join(', ') : 'Autora Desconocida';
         }
       }
     } catch (bookErr) {
-      console.warn("Fallo al consultar metadatos del libro por ISBN:", bookErr);
+      console.warn("Fallo al consultar metadatos del libro:", bookErr);
     }
 
     try {
@@ -402,33 +413,33 @@ export default function App() {
                   <div className="flex gap-2">
                     <input 
                       type="text" 
+                      placeholder="ID de Socia..."
                       value={loginInput}
                       onChange={(e) => setLoginInput(e.target.value)}
-                      placeholder="Código de socia..."
-                      className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      className="flex-1 bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-sm focus:ring-2 focus:ring-amber-200 outline-none transition-all"
+                      onKeyDown={(e) => e.key === 'Enter' && handleLogin(loginInput)}
                     />
                     <button 
                       onClick={() => handleLogin(loginInput)}
-                      disabled={isLoggingIn}
-                      className="bg-ink text-bg px-6 py-3 rounded-xl text-sm font-bold uppercase disabled:opacity-50"
+                      disabled={isLoggingIn || !loginInput}
+                      className="bg-ink text-bg px-6 py-3 rounded-2xl text-sm font-bold uppercase tracking-widest disabled:opacity-50 transition-all hover:bg-black active:scale-95"
                     >
                       {isLoggingIn ? <Loader2 className="animate-spin" size={18} /> : 'Entrar'}
                     </button>
                   </div>
-                  {loginError && <p className="text-xs text-red-500 font-bold">{loginError}</p>}
+                  {loginError && <p className="text-xs text-red-500 mt-2 flex items-center gap-1"><XCircle size={12} /> {loginError}</p>}
+                  {loginSuccess && <p className="text-xs text-green-600 mt-2 flex items-center gap-1"><CheckCircle size={12} /> {loginSuccess}</p>}
                 </div>
               ) : (
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-500">Sesión activa como:</p>
-                    <p className="text-lg font-bold">{activeUser.nombre}</p>
+                    <p className="text-xs font-mono opacity-50 mb-1 uppercase tracking-tighter">Socia Activa</p>
+                    <h3 className="text-xl font-bold">{activeUser.nombre}</h3>
+                    <p className="text-xs opacity-60 mt-1 flex items-center gap-1"><Code size={10} /> {activeUser.barcode}</p>
                   </div>
                   <button 
-                    onClick={() => {
-                      setActiveUserId('');
-                      sessionStorage.removeItem('id_socia');
-                    }}
-                    className="text-xs text-red-500 font-bold uppercase"
+                    onClick={() => { setActiveUserId(''); setPrestamoMemberId(''); }}
+                    className="text-xs font-bold uppercase text-red-500 hover:bg-red-50 px-3 py-2 rounded-xl transition-colors"
                   >
                     Salir
                   </button>
@@ -439,152 +450,284 @@ export default function App() {
             <div className="grid grid-cols-2 gap-4">
               <button 
                 onClick={() => setView('scan')}
-                className="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm flex flex-col items-center gap-3 hover:border-amber-500 transition-all"
+                className="bg-ink text-bg p-6 rounded-3xl flex flex-col items-center gap-3 shadow-xl hover:bg-black transition-all active:scale-95 group"
               >
-                <div className="bg-indigo-50 p-4 rounded-2xl text-indigo-600">
+                <div className="bg-bg/10 p-3 rounded-2xl group-hover:scale-110 transition-transform">
                   <Scan size={32} />
                 </div>
-                <span className="font-bold text-sm uppercase tracking-wider">Escanear</span>
+                <span className="font-bold uppercase tracking-widest text-xs">Escanear</span>
               </button>
               <button 
                 onClick={() => setView('search')}
-                className="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm flex flex-col items-center gap-3 hover:border-amber-500 transition-all"
+                className="bg-white text-ink p-6 rounded-3xl border border-gray-200 flex flex-col items-center gap-3 shadow-sm hover:border-gray-300 transition-all active:scale-95 group"
               >
-                <div className="bg-amber-50 p-4 rounded-2xl text-amber-600">
+                <div className="bg-gray-100 p-3 rounded-2xl group-hover:scale-110 transition-transform">
                   <Search size={32} />
                 </div>
-                <span className="font-bold text-sm uppercase tracking-wider">Catálogo</span>
+                <span className="font-bold uppercase tracking-widest text-xs">Catálogo</span>
               </button>
             </div>
 
-            <div className="space-y-4">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400">Actividad Reciente</h3>
-              {logs.length === 0 ? (
-                <div className="bg-white/40 border border-dashed border-gray-300 rounded-3xl p-8 text-center text-gray-400 text-xs italic">
-                  No hay operaciones recientes.
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {logs.slice(0, 5).map(log => (
-                    <div key={log.id} className="bg-white p-4 rounded-2xl border border-gray-100 flex items-center justify-between shadow-sm">
-                      <div>
-                        <p className="text-xs font-bold">{log.bookTitle || log.asin}</p>
-                        <p className="text-[10px] text-gray-500 uppercase">{log.accion} • {log.timestamp}</p>
+            <section className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold uppercase tracking-widest opacity-60 flex items-center gap-2">
+                  <FileText size={14} /> Historial Reciente
+                </h3>
+                {logs.length > 0 && (
+                  <button 
+                    onClick={clearLogs}
+                    className="text-[10px] font-bold uppercase opacity-40 hover:opacity-100 transition-opacity"
+                  >
+                    Borrar Todo
+                  </button>
+                )}
+              </div>
+              
+              <div className="space-y-3">
+                {logs.length === 0 ? (
+                  <div className="py-12 text-center border-2 border-dashed border-gray-200 rounded-3xl">
+                    <p className="text-sm text-gray-400 font-serif italic">No hay actividad reciente</p>
+                  </div>
+                ) : (
+                  logs.slice(0, 5).map(log => (
+                    <motion.div 
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      key={log.id} 
+                      className="bg-white p-4 rounded-2xl border border-gray-100 flex items-center justify-between shadow-sm"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-xl ${log.status === 'success' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+                          {log.status === 'success' ? <CheckCircle size={18} /> : <XCircle size={18} />}
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold capitalize">
+                            {log.accion} - <span className="font-mono opacity-60">{log.asin}</span>
+                          </p>
+                          {log.bookTitle && <p className="text-[10px] text-gray-500 italic mt-0.5 line-clamp-1">{log.bookTitle}</p>}
+                          {log.status === 'error' && <p className="text-[10px] text-red-400 mt-0.5">{log.errorMessage}</p>}
+                        </div>
                       </div>
-                      <div className={log.status === 'success' ? 'text-green-500' : 'text-red-500'}>
-                        {log.status === 'success' ? <CheckCircle size={18} /> : <XCircle size={18} />}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                      <span className="text-[10px] font-mono opacity-40">{log.timestamp}</span>
+                    </motion.div>
+                  ))
+                )}
+              </div>
+            </section>
           </div>
         )}
 
-        {view === 'search' && <CatalogSearch />}
+        {view === 'search' && <CatalogSearch onBack={() => setView('dashboard')} />}
 
         {view === 'scan' && (
           <div className="space-y-6">
-            <div className="bg-white p-5 rounded-3xl border border-gray-200">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="font-serif italic text-lg font-bold">Escáner</h3>
-                <button onClick={() => setView('dashboard')} className="text-xs font-bold uppercase text-gray-400">Cerrar</button>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 bg-gray-100 p-1 rounded-2xl mb-4">
+            <div className="flex items-center justify-between">
+              <button 
+                onClick={() => setView('dashboard')}
+                className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+              >
+                <Home size={24} />
+              </button>
+              <div className="flex bg-white p-1 rounded-2xl border border-gray-200 shadow-sm">
                 <button 
                   onClick={() => setSelectedAction('prestamo')}
-                  className={`py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
-                    selectedAction === 'prestamo' ? 'bg-ink text-bg shadow-sm' : 'text-gray-500'
-                  }`}
+                  className={`px-6 py-2 rounded-xl text-xs font-bold uppercase transition-all ${selectedAction === 'prestamo' ? 'bg-ink text-bg shadow-md' : 'text-gray-400'}`}
                 >
-                  📥 Préstamo
+                  Préstamo
                 </button>
                 <button 
                   onClick={() => setSelectedAction('devolucion')}
-                  className={`py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
-                    selectedAction === 'devolucion' ? 'bg-amber-600 text-white shadow-sm' : 'text-gray-500'
-                  }`}
+                  className={`px-6 py-2 rounded-xl text-xs font-bold uppercase transition-all ${selectedAction === 'devolucion' ? 'bg-ink text-bg shadow-md' : 'text-gray-400'}`}
                 >
-                  📤 Devolución
+                  Devolución
                 </button>
               </div>
+            </div>
 
-              {selectedAction === 'prestamo' && (
-                <div className={`p-4 rounded-2xl border text-sm ${prestamoMemberId ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-200'}`}>
-                  <p className="text-[10px] font-bold uppercase opacity-60">Socia para préstamo</p>
-                  {prestamoMemberId ? (
-                    <div className="flex justify-between items-center mt-1">
-                      <span className="font-bold">{prestamoMemberId}</span>
-                      <button onClick={() => setPrestamoMemberId('')} className="text-[10px] font-bold uppercase text-amber-700">Cambiar</button>
+            <div className="bg-white p-4 rounded-[2rem] border border-gray-200 shadow-xl overflow-hidden relative">
+              <Scanner 
+                onResult={handleScanSuccess} 
+                active={view === 'scan'} 
+              />
+              
+              <AnimatePresence>
+                {(apiResponse || apiError) && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    className={`absolute bottom-6 left-6 right-6 p-4 rounded-2xl shadow-2xl border flex items-start gap-3 z-10 ${
+                      apiError ? 'bg-red-50 border-red-200 text-red-700' : 'bg-green-50 border-green-200 text-green-700'
+                    }`}
+                  >
+                    {apiError ? <XCircle className="shrink-0" /> : <CheckCircle className="shrink-0" />}
+                    <div className="flex-1">
+                      <p className="text-sm font-bold">{apiError ? 'Error' : 'Éxito'}</p>
+                      <p className="text-xs opacity-90 mt-0.5 leading-relaxed">{apiError || apiResponse?.message}</p>
+                      <button 
+                        onClick={() => { setApiError(null); setApiResponse(null); }}
+                        className="mt-2 text-[10px] font-bold uppercase tracking-widest opacity-60 hover:opacity-100"
+                      >
+                        Entendido
+                      </button>
                     </div>
-                  ) : (
-                    <p className="text-xs italic mt-1 text-amber-900">Escanea la tarjeta de socia o introduce su código.</p>
-                  )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            <div className="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-bold uppercase tracking-widest opacity-60">Entrada Manual</h4>
+                <div className="flex items-center gap-1 text-[10px] font-mono opacity-40">
+                  <ArrowRightLeft size={10} /> {selectedAction}
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  placeholder={selectedAction === 'prestamo' && !prestamoMemberId ? "ID de Socia..." : "Código del Libro..."}
+                  value={manualCode}
+                  onChange={(e) => setManualCode(e.target.value)}
+                  className="flex-1 bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-sm focus:ring-2 focus:ring-amber-200 outline-none transition-all"
+                />
+                <button 
+                  onClick={() => handleScanSuccess(manualCode)}
+                  disabled={syncing || !manualCode}
+                  className="bg-ink text-bg px-6 py-3 rounded-2xl text-sm font-bold uppercase tracking-widest disabled:opacity-50 transition-all hover:bg-black active:scale-95"
+                >
+                  {syncing ? <Loader2 className="animate-spin" size={18} /> : 'Enviar'}
+                </button>
+              </div>
+              {selectedAction === 'prestamo' && prestamoMemberId && (
+                <div className="flex items-center justify-between p-3 bg-amber-50 border border-amber-100 rounded-xl">
+                  <span className="text-xs font-medium text-amber-800 flex items-center gap-2">
+                    <User size={14} /> Socia: <strong>{prestamoMemberId}</strong>
+                  </span>
+                  <button onClick={() => setPrestamoMemberId('')} className="text-[10px] font-bold text-amber-900/40 hover:text-amber-900 uppercase">Cambiar</button>
                 </div>
               )}
             </div>
-
-            <Scanner onScanSuccess={handleScanSuccess} />
-            
-            {apiResponse && (
-              <div className="p-4 bg-green-50 border border-green-200 rounded-2xl text-green-900 text-xs">
-                <p className="font-bold">¡Éxito!</p>
-                <p>{apiResponse.message}</p>
-              </div>
-            )}
-            {apiError && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-2xl text-red-900 text-xs">
-                <p className="font-bold">Error</p>
-                <p>{apiError}</p>
-              </div>
-            )}
           </div>
         )}
 
         {view === 'settings' && (
-          <div className="space-y-6 bg-white p-6 rounded-3xl border border-gray-200 shadow-sm">
-            <h2 className="text-xl font-serif italic font-bold">Ajustes</h2>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between border-b pb-4">
-                <div>
-                  <p className="text-sm font-bold">Historial Local</p>
-                  <p className="text-xs text-gray-500">{logs.length} operaciones guardadas</p>
-                </div>
-                <button onClick={clearLogs} className="text-red-500 text-xs font-bold uppercase">Borrar todo</button>
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-bold">Versión de la App</p>
-                  <p className="text-xs text-gray-500">1.2.0-produccion</p>
-                </div>
-                <span className="text-[10px] bg-gray-100 px-2 py-1 rounded-full font-mono">STABLE</span>
-              </div>
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <button 
+                onClick={() => setView('dashboard')}
+                className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+              >
+                <Home size={24} />
+              </button>
+              <h2 className="text-xl font-serif italic font-bold">Ajustes</h2>
+              <div className="w-10" />
             </div>
+
+            <div className="flex bg-white p-1 rounded-2xl border border-gray-200 shadow-sm mb-6">
+              <button 
+                onClick={() => setSettingsSubView('socia')}
+                className={`flex-1 py-2 rounded-xl text-xs font-bold uppercase transition-all flex items-center justify-center gap-2 ${settingsSubView === 'socia' ? 'bg-ink text-bg shadow-md' : 'text-gray-400'}`}
+              >
+                <Users size={14} /> Gestión Socias
+              </button>
+              <button 
+                onClick={() => setSettingsSubView('help')}
+                className={`flex-1 py-2 rounded-xl text-xs font-bold uppercase transition-all flex items-center justify-center gap-2 ${settingsSubView === 'help' ? 'bg-ink text-bg shadow-md' : 'text-gray-400'}`}
+              >
+                <HelpCircle size={14} /> Ayuda
+              </button>
+            </div>
+
+            {settingsSubView === 'socia' && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold uppercase tracking-widest opacity-60">Socias Guardadas</h3>
+                  <p className="text-[10px] opacity-40">Local Storage</p>
+                </div>
+                
+                <div className="grid gap-3">
+                  {users.map(user => (
+                    <div key={user.id} className="bg-white p-4 rounded-2xl border border-gray-100 flex items-center justify-between shadow-sm group">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-serif italic ${activeUserId === user.id ? 'bg-amber-500 text-black' : 'bg-gray-100 text-gray-400'}`}>
+                          {user.nombre.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold">{user.nombre}</p>
+                          <p className="text-[10px] font-mono opacity-50">{user.barcode}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
+                          onClick={() => { setActiveUserId(user.id); setPrestamoMemberId(user.barcode); }}
+                          className={`p-2 rounded-xl transition-colors ${activeUserId === user.id ? 'bg-amber-100 text-amber-600' : 'bg-gray-50 text-gray-400 hover:bg-gray-100'}`}
+                        >
+                          <Check size={16} />
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteUser(user.id)}
+                          className="p-2 bg-red-50 text-red-400 rounded-xl hover:bg-red-100 transition-colors"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {settingsSubView === 'help' && (
+              <div className="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm space-y-6">
+                <div className="space-y-2">
+                  <h3 className="font-bold flex items-center gap-2 text-amber-700"><Info size={18} /> Sobre la App</h3>
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    Esta PWA ha sido diseñada para la <strong>Barrioteca Acalencá</strong>. Permite gestionar préstamos y devoluciones de forma rápida desde cualquier dispositivo móvil.
+                  </p>
+                </div>
+                
+                <div className="space-y-4 border-t border-gray-100 pt-6">
+                  <h4 className="text-xs font-bold uppercase tracking-widest opacity-40">Cómo usar</h4>
+                  <ul className="space-y-3">
+                    {[
+                      { icon: <UserPlus size={14} />, text: "Identifícate con tu ID de socia en la pantalla principal." },
+                      { icon: <Scan size={14} />, text: "Pulsa 'Escanear' y elige 'Préstamo' o 'Devolución'." },
+                      { icon: <ArrowRightLeft size={14} />, text: "Escanea el código de barras del libro (ISBN o ASIN)." },
+                      { icon: <Smartphone size={14} />, text: "Instala la app en tu móvil para usarla sin conexión a internet." }
+                    ].map((item, i) => (
+                      <li key={i} className="flex items-start gap-3 text-sm text-gray-600">
+                        <div className="mt-0.5 text-amber-600">{item.icon}</div>
+                        <span>{item.text}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 bg-[#F5F5F0]/90 backdrop-blur-lg border-t border-gray-200 px-6 py-4 z-50">
-        <div className="container mx-auto max-w-2xl flex justify-around items-center">
-          <button onClick={() => setView('dashboard')} className={`flex flex-col items-center gap-1 ${view === 'dashboard' ? 'text-amber-600' : 'text-gray-400'}`}>
-            <Home size={24} />
-            <span className="text-[10px] font-bold uppercase">Inicio</span>
+      <nav className="fixed bottom-0 left-0 right-0 bg-[#F5F5F0]/80 backdrop-blur-xl border-t border-gray-200 px-8 py-4 flex items-center justify-between z-50">
+        {[
+          { id: 'dashboard', icon: <Home size={24} />, label: 'Inicio' },
+          { id: 'search', icon: <Search size={24} />, label: 'Buscar' },
+          { id: 'scan', icon: <Scan size={24} />, label: 'Escanear' },
+          { id: 'settings', icon: <SettingsIcon size={24} />, label: 'Ajustes' }
+        ].map(item => (
+          <button 
+            key={item.id}
+            onClick={() => setView(item.id as View)}
+            className={`flex flex-col items-center gap-1 transition-all ${view === item.id ? 'text-amber-700 scale-110' : 'text-gray-400 hover:text-gray-600'}`}
+          >
+            {item.icon}
+            <span className="text-[10px] font-bold uppercase tracking-tighter">{item.label}</span>
+            {view === item.id && (
+              <motion.div layoutId="nav-indicator" className="w-1 h-1 bg-amber-700 rounded-full mt-1" />
+            )}
           </button>
-          <button onClick={() => setView('scan')} className={`flex flex-col items-center gap-1 ${view === 'scan' ? 'text-amber-600' : 'text-gray-400'}`}>
-            <Scan size={24} />
-            <span className="text-[10px] font-bold uppercase">Escanear</span>
-          </button>
-          <button onClick={() => setView('search')} className={`flex flex-col items-center gap-1 ${view === 'search' ? 'text-amber-600' : 'text-gray-400'}`}>
-            <Search size={24} />
-            <span className="text-[10px] font-bold uppercase">Catálogo</span>
-          </button>
-          <button onClick={() => setView('settings')} className={`flex flex-col items-center gap-1 ${view === 'settings' ? 'text-amber-600' : 'text-gray-400'}`}>
-            <SettingsIcon size={24} />
-            <span className="text-[10px] font-bold uppercase">Ajustes</span>
-          </button>
-        </div>
+        ))}
       </nav>
     </div>
   );
