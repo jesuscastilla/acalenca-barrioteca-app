@@ -16,5 +16,9 @@ export default defineConfig(() => {
       hmr: true,
       watch: {},
     },
+    // Añade la propiedad build aquí:
+    build: {
+      chunkSizeWarningLimit: 1000, // Puedes subirlo a 1500 o más si sigues viendo el aviso
+    },
   };
 });
