@@ -62,15 +62,11 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
 
-  // Estado de socias con opciones de prueba por defecto
+  // Estado de socias (vaciado de datos de prueba)
   const [users, setUsers] = useState<LibraryUser[]>(() => {
     const saved = localStorage.getItem('barrioteca_users');
     if (saved) return JSON.parse(saved);
-    return [
-      { id: '1', nombre: 'Carmen Maura (Socia Pruebas)', barcode: 'SOCIA-001' },
-      { id: '2', nombre: 'Penélope Cruz (Socia Pruebas)', barcode: 'SOCIA-002' },
-      { id: '3', nombre: 'Antonio Banderas (Socia Pruebas)', barcode: 'SOCIA-003' }
-    ];
+    return [];
   });
   
   const [activeUserId, setActiveUserId] = useState<string>(() => {
@@ -380,9 +376,9 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#F5F5F0] text-[#141414] font-sans selection:bg-amber-200">
       <header className="sticky top-0 z-50 bg-[#F5F5F0]/80 backdrop-blur-md border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="bg-ink p-2 rounded-xl text-bg shadow-lg">
-            <Library size={24} />
+        <div className="flex items-center gap-3">
+          <div className="bg-ink p-1 rounded-xl text-bg shadow-lg">
+            <img src="/logo.png" alt="Logo Barrioteca" className="w-10 h-10 object-contain" />
           </div>
           <div>
             <h1 className="text-xl font-serif italic font-bold tracking-tight">Barrioteca Acalencá</h1>
