@@ -21,7 +21,8 @@ import {
   Users,
   Check,
   HelpCircle,
-  X
+  X,
+  Download
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Scanner } from './components/Scanner';
@@ -96,16 +97,46 @@ export default function App() {
   const [apiError, setApiError] = useState<string | null>(null);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstallable, setIsInstallable] = useState(false);
+  const [showInstallToast, setShowInstallToast] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(false);
 
   // Gestión de instalación PWA
   useEffect(() => {
+    // Detectar si ya está instalada como app standalone
+    const isStandalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as any).standalone === true;
+    if (isStandalone) {
+      setIsInstalled(true);
+      return;
+    }
+
+    const dismissed = localStorage.getItem('pwa_install_dismissed');
+
     const handleBeforeInstallPrompt = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
       setIsInstallable(true);
+
+      // Mostrar toast automático tras 3 segundos si el usuario no lo descartó antes
+      if (!dismissed) {
+        setTimeout(() => setShowInstallToast(true), 3000);
+      }
     };
+
+    const handleAppInstalled = () => {
+      setIsInstalled(true);
+      setIsInstallable(false);
+      setShowInstallToast(false);
+      setDeferredPrompt(null);
+    };
+
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
   }, []);
 
   const handleInstallClick = async () => {
@@ -115,7 +146,17 @@ export default function App() {
     if (outcome === 'accepted') {
       setDeferredPrompt(null);
       setIsInstallable(false);
+      setShowInstallToast(false);
+    } else {
+      // Si rechaza, guardar en localStorage para no molestar más
+      localStorage.setItem('pwa_install_dismissed', '1');
+      setShowInstallToast(false);
     }
+  };
+
+  const handleDismissToast = () => {
+    localStorage.setItem('pwa_install_dismissed', '1');
+    setShowInstallToast(false);
   };
   
   const activeUser = users.find(u => u.id === activeUserId);
@@ -362,40 +403,82 @@ export default function App() {
         )}
       </header>
 
-      <main className="container mx-auto max-w-2xl px-6 py-6 pb-32">
-        <AnimatePresence>
-          {isInstallable && (
-            <motion.div 
-              initial={{ opacity: 0, y: 50, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.95 }}
-              className="fixed bottom-24 left-4 right-4 z-[100] max-w-sm mx-auto bg-amber-500 text-black p-4 rounded-3xl shadow-2xl flex items-center justify-between gap-3 border border-amber-400/50"
-            >
-              <div className="flex items-center gap-3">
-                <Smartphone size={24} className="shrink-0" />
-                <div>
-                  <h4 className="font-bold text-sm">Instalar Barrioteca</h4>
-                  <p className="text-xs opacity-90 leading-tight mt-0.5">Añade la app a tu pantalla de inicio para un acceso rápido</p>
+      {/* ── Toast de instalación PWA ── */}
+      <AnimatePresence>
+        {showInstallToast && isInstallable && (
+          <motion.div
+            id="pwa-install-toast"
+            initial={{ opacity: 0, y: 80, scale: 0.92 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 60, scale: 0.95 }}
+            transition={{ type: 'spring', stiffness: 320, damping: 28 }}
+            className="fixed bottom-24 left-4 right-4 z-[200] max-w-sm mx-auto"
+          >
+            <div className="relative bg-[#141414] text-white rounded-[2rem] shadow-2xl overflow-hidden">
+              {/* Gradiente decorativo superior */}
+              <div className="absolute inset-0 bg-gradient-to-br from-amber-500/20 via-transparent to-transparent pointer-events-none" />
+
+              <div className="relative p-5">
+                {/* Cabecera */}
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-amber-400 text-black p-2.5 rounded-2xl shadow-lg">
+                      <Download size={20} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-amber-400 mb-0.5">Acceso rápido</p>
+                      <h4 className="font-bold text-base leading-tight">Instalar Barrioteca</h4>
+                    </div>
+                  </div>
+                  <button
+                    id="pwa-toast-close"
+                    onClick={handleDismissToast}
+                    className="p-1.5 bg-white/10 hover:bg-white/20 rounded-xl transition-colors shrink-0"
+                    aria-label="Cerrar notificación"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+
+                {/* Descripción */}
+                <p className="text-xs text-white/70 leading-relaxed mb-4">
+                  Añade la app a tu pantalla de inicio para gestionar préstamos aunque no tengas conexión a internet.
+                </p>
+
+                {/* Beneficios */}
+                <div className="flex gap-2 mb-4">
+                  {['Sin navegador', 'Acceso offline', 'Notificaciones'].map(tag => (
+                    <span key={tag} className="text-[10px] font-bold bg-white/10 text-white/70 px-2.5 py-1 rounded-full">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+
+                {/* Acciones */}
+                <div className="flex gap-2">
+                  <button
+                    id="pwa-install-btn"
+                    onClick={handleInstallClick}
+                    className="flex-1 bg-amber-400 hover:bg-amber-300 text-black font-bold text-sm py-3 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20"
+                  >
+                    <Download size={16} />
+                    Instalar ahora
+                  </button>
+                  <button
+                    onClick={handleDismissToast}
+                    className="px-4 py-3 bg-white/10 hover:bg-white/15 text-white/70 text-sm font-medium rounded-2xl transition-all"
+                  >
+                    Ahora no
+                  </button>
                 </div>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <button 
-                  onClick={handleInstallClick}
-                  className="bg-black text-white px-3 py-2 rounded-xl text-xs font-bold uppercase shadow-sm"
-                >
-                  Instalar
-                </button>
-                <button 
-                  onClick={() => setIsInstallable(false)}
-                  className="p-2 bg-amber-400/30 hover:bg-amber-400/50 rounded-xl transition-colors text-black"
-                  aria-label="Cerrar"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <main className="container mx-auto max-w-2xl px-6 py-6 pb-32">
+        <div>
 
         {view === 'dashboard' && (
           <div className="space-y-8">
@@ -624,6 +707,44 @@ export default function App() {
               <div className="w-10" />
             </div>
 
+            {/* ── Banner instalar PWA en Ajustes ── */}
+            {!isInstalled && isInstallable && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-[#141414] text-white rounded-3xl p-5 relative overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-amber-500/15 via-transparent to-transparent pointer-events-none" />
+                <div className="relative flex items-center gap-4">
+                  <div className="bg-amber-400 text-black p-3 rounded-2xl shrink-0">
+                    <Smartphone size={22} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-sm">Instalar como app</p>
+                    <p className="text-xs text-white/60 mt-0.5 leading-tight">Acceso directo desde tu pantalla de inicio, sin navegador</p>
+                  </div>
+                  <button
+                    id="settings-install-btn"
+                    onClick={handleInstallClick}
+                    className="shrink-0 bg-amber-400 hover:bg-amber-300 text-black font-bold text-xs px-4 py-2.5 rounded-xl transition-all active:scale-95 flex items-center gap-1.5"
+                  >
+                    <Download size={13} /> Instalar
+                  </button>
+                </div>
+              </motion.div>
+            )}
+            {isInstalled && (
+              <div className="bg-green-50 border border-green-100 rounded-3xl p-4 flex items-center gap-3">
+                <div className="bg-green-100 text-green-600 p-2 rounded-xl">
+                  <CheckCircle size={18} />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-green-800">App instalada</p>
+                  <p className="text-xs text-green-600">Barrioteca ya está en tu pantalla de inicio</p>
+                </div>
+              </div>
+            )}
+
             <div className="flex bg-white p-1 rounded-2xl border border-gray-200 shadow-sm mb-6">
               <button 
                 onClick={() => setSettingsSubView('socia')}
@@ -707,6 +828,7 @@ export default function App() {
             )}
           </div>
         )}
+        </div>
       </main>
 
       <nav className="fixed bottom-0 left-0 right-0 bg-[#F5F5F0]/80 backdrop-blur-xl border-t border-gray-200 px-8 py-4 flex items-center justify-between z-50">
