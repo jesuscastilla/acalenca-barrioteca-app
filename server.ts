@@ -14,7 +14,8 @@ async function startServer() {
   app.use(express.json());
 
   // URL base de la API de SLiMS en el NAS Synology
-  const SLIMS_API_BASE = process.env.SLIMS_API_BASE || "https://pelotxo.synology.me/acalenca-barrioteca/api/v1";
+  // NOTA: Ajusta esta URL según la ruta real de tu instalación de SLiMS
+  const SLIMS_API_BASE = process.env.SLIMS_API_BASE || "https://pelotxo.synology.me/slims/api/v1";
 
   /**
    * Verificar si una socia existe en SLiMS

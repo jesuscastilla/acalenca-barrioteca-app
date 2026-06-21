@@ -82,6 +82,8 @@ export default function App() {
   const [loginError, setLoginError] = useState<string | null>(null);
   const [loginSuccess, setLoginSuccess] = useState<string | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [verifyingStoredUser, setVerifyingStoredUser] = useState(true);
+  const [storedUserValid, setStoredUserValid] = useState(false);
 
   // Historial de transacciones
   const [logs, setLogs] = useState<TransactionLog[]>(() => {
@@ -226,6 +228,54 @@ export default function App() {
       setIsLoggingIn(false);
     }
   };
+
+  // Al cargar la app, verificar que la socia almacenada sigue existiendo en SLiMS
+  useEffect(() => {
+    const storedUserId = localStorage.getItem('barrioteca_active_user_id');
+    const storedUsers = localStorage.getItem('barrioteca_users');
+    
+    if (!storedUserId || !storedUsers) {
+      setVerifyingStoredUser(false);
+      return;
+    }
+
+    const parsedUsers: LibraryUser[] = JSON.parse(storedUsers);
+    const storedUser = parsedUsers.find(u => u.id === storedUserId);
+    
+    if (!storedUser) {
+      setVerifyingStoredUser(false);
+      return;
+    }
+
+    // Verificar contra SLiMS que la socia sigue existiendo
+    fetch('/api/verify-member', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ member_id: storedUser.barcode || storedUser.id })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data && data.status === 'success' && data.data) {
+        setStoredUserValid(true);
+        setActiveUserId(storedUserId);
+        setPrestamoMemberId(storedUser.barcode || storedUser.id);
+      } else {
+        // La socia ya no existe en SLiMS -> limpiar stored user
+        console.warn('Socia almacenada ya no existe en SLiMS, limpiando sesión.');
+        localStorage.removeItem('barrioteca_active_user_id');
+        localStorage.removeItem('barrioteca_prestamo_member_id');
+        setActiveUserId('');
+        setPrestamoMemberId('');
+      }
+    })
+    .catch(err => {
+      // No hay conexión con SLiMS -> no podemos verificar, mantener sesión pero marcar que no se pudo validar
+      console.warn('No se pudo verificar la socia almacenada (SLiMS no responde):', err.message);
+    })
+    .finally(() => {
+      setVerifyingStoredUser(false);
+    });
+  }, []);
 
   // Persistencia de datos en localStorage
   useEffect(() => {
