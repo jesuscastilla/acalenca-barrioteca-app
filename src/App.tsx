@@ -527,6 +527,48 @@ export default function App() {
 
         {view === 'dashboard' && (
           <div className="space-y-8">
+            {/* ── Banner de instalación PWA en el inicio ── */}
+            <AnimatePresence>
+              {isInstallable && !isInstalled && !localStorage.getItem('pwa_install_dismissed_home') && (
+                <motion.div
+                  initial={{ opacity: 0, y: -20, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                  className="bg-gradient-to-br from-amber-50 to-amber-100/60 border border-amber-200 rounded-3xl p-5 relative overflow-hidden"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-transparent to-transparent pointer-events-none" />
+                  <div className="relative flex items-center gap-4">
+                    <div className="bg-amber-400 text-black p-3 rounded-2xl shrink-0 shadow-lg">
+                      <Download size={22} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm text-amber-900">¿Quieres acceso rápido?</p>
+                      <p className="text-xs text-amber-700/70 mt-0.5 leading-tight">
+                        Añade Barrioteca a tu pantalla de inicio y gestiona préstamos sin abrir el navegador.
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        id="home-install-btn"
+                        onClick={handleInstallClick}
+                        className="bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs px-4 py-2.5 rounded-xl transition-all active:scale-95 flex items-center gap-1.5 shadow-md"
+                      >
+                        <Download size={13} /> Instalar
+                      </button>
+                      <button
+                        onClick={() => localStorage.setItem('pwa_install_dismissed_home', '1')}
+                        className="p-2 hover:bg-amber-200/50 rounded-xl transition-colors text-amber-500"
+                        aria-label="Cerrar"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <section className="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-2xl font-serif italic font-bold">Bienvenida</h2>
