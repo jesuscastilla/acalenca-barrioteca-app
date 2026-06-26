@@ -307,15 +307,14 @@ export default function App() {
     let bookTitle: string | undefined = undefined;
     let bookAuthor: string | undefined = undefined;
     
-    // Consultar metadatos del libro (opcional, para el historial)
+    // Consultar metadatos del libro a través del proxy del servidor (usa API Key desde backend)
     try {
       const cleanCode = codeValue.replace(/[-\s]/g, '').trim();
       if (cleanCode.length >= 8) {
-        const bookResponse = await axios.get(`https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanCode}`, { timeout: 4000 });
-        if (bookResponse.data && bookResponse.data.items && bookResponse.data.items.length > 0) {
-          const info = bookResponse.data.items[0].volumeInfo;
-          bookTitle = info.title;
-          bookAuthor = info.authors ? info.authors.join(', ') : 'Autora Desconocida';
+        const bookResponse = await axios.get(`/api/book-metadata?isbn=${cleanCode}`, { timeout: 5000 });
+        if (bookResponse.data && bookResponse.data.status === 'success' && bookResponse.data.data) {
+          bookTitle = bookResponse.data.data.title;
+          bookAuthor = bookResponse.data.data.authors || 'Autora Desconocida';
         }
       }
     } catch (bookErr) {

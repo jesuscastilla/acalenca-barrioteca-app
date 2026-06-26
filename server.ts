@@ -238,6 +238,49 @@ async function startServer() {
   });
 
   /**
+   * Proxy para obtener metadatos de un libro desde Google Books
+   * GET /api/book-metadata?isbn=XXXXXXXX
+   * 
+   * Esto evita exponer la API Key de Google Books en el frontend.
+   * La API Key se lee desde variable de entorno GOOGLE_BOOKS_API_KEY
+   * o desde un archivo .env en la raíz de la PWA.
+   */
+  app.get("/api/book-metadata", async (req, res) => {
+    const { isbn } = req.query;
+
+    if (!isbn) {
+      return res.status(400).json({ status: "error", message: "ISBN requerido" });
+    }
+
+    const cleanIsbn = (isbn as string).replace(/[-\s]/g, "").trim();
+    const apiKey = process.env.GOOGLE_BOOKS_API_KEY || "";
+
+    try {
+      let url = `https://www.googleapis.com/books/v1/volumes?q=isbn:${encodeURIComponent(cleanIsbn)}`;
+      if (apiKey) url += `&key=${apiKey}`;
+
+      const response = await axios.get(url, { timeout: 5000 });
+
+      if (response.data?.items?.length > 0) {
+        const info = response.data.items[0].volumeInfo;
+        return res.json({
+          status: "success",
+          data: {
+            title: info.title || null,
+            authors: info.authors ? info.authors.join(", ") : null,
+            image: info.imageLinks?.thumbnail || null
+          }
+        });
+      }
+
+      return res.json({ status: "success", data: null });
+    } catch (error: any) {
+      console.error("Error al consultar metadatos del libro:", error.message);
+      return res.status(500).json({ status: "error", message: "No se pudieron obtener los metadatos." });
+    }
+  });
+
+  /**
    * Proxy para búsqueda en el catálogo
    * GET /api/catalog-proxy
    * Parámetros: { q: string }
