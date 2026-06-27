@@ -33,8 +33,8 @@ export const CatalogSearch: React.FC = () => {
   const searchCatalog = async () => {
     setLoading(true);
     try {
-      // Llamada al proxy de Node que a su vez consulta la API de SLiMS
-      const response = await axios.get(`/api/catalog-proxy?q=${encodeURIComponent(query)}`);
+      // Llamada al proxy PHP con ruta relativa (funciona con Nginx sin reescritura)
+      const response = await axios.get(`./api-proxy.php?action=catalog-proxy&q=${encodeURIComponent(query)}`);
       setResults(response.data);
     } catch (error) {
       console.error("Error al buscar en el catálogo:", error);

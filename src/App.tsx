@@ -53,7 +53,11 @@ interface TransactionLog {
 export default function App() {
   const [view, setView] = useState<View>('dashboard');
   const [settingsSubView, setSettingsSubView] = useState<'help'>('help');
-  const endpoint = '/api';
+  // Ruta base para llamadas a la API.
+  // Usamos ruta RELATIVA (./api-proxy.php) para que funcione con Nginx
+  // sin necesidad de reglas de reescritura. El navegador la resuelve
+  // contra la URL actual (ej: /barrioteca/api-proxy.php?action=verify-member).
+  const endpoint = './api-proxy.php';
   const [selectedAction, setSelectedAction] = useState<ActionType>('prestamo');
   const [manualCode, setManualCode] = useState('');
   const [loading, setLoading] = useState(false);
@@ -166,7 +170,7 @@ export default function App() {
 
     setIsLoggingIn(true);
     try {
-      const response = await fetch('/api/verify-member', {
+      const response = await fetch(`${endpoint}?action=verify-member`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -245,7 +249,7 @@ export default function App() {
     }
 
     // Verificar contra SLiMS que la socia sigue existiendo
-    fetch('/api/verify-member', {
+    fetch(`${endpoint}?action=verify-member`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({ member_id: storedUser.barcode || storedUser.id })
@@ -308,7 +312,7 @@ export default function App() {
     try {
       const cleanCode = codeValue.replace(/[-\s]/g, '').trim();
       if (cleanCode.length >= 8) {
-        const bookResponse = await axios.get(`/api/book-metadata?isbn=${cleanCode}`, { timeout: 5000 });
+        const bookResponse = await axios.get(`${endpoint}?action=book-metadata&isbn=${cleanCode}`, { timeout: 5000 });
         if (bookResponse.data && bookResponse.data.status === 'success' && bookResponse.data.data) {
           bookTitle = bookResponse.data.data.title;
           bookAuthor = bookResponse.data.data.authors || 'Autora Desconocida';
@@ -328,7 +332,7 @@ export default function App() {
         payload.id_socia = prestamoMemberId || activeUser?.barcode || sessionStorage.getItem('id_socia') || "";
       }
 
-      const response = await fetch('/api/perform-action', {
+      const response = await fetch(`${endpoint}?action=perform-action`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
