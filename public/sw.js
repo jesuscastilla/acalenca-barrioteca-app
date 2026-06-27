@@ -1,12 +1,14 @@
-const CACHE_NAME = 'barrioteca-cache-v2';
+const CACHE_NAME = 'barrioteca-cache-v3';
+// Rutas relativas al location del Service Worker
+// Si el SW está en /barrioteca/sw.js, se resuelven contra /barrioteca/
 const ASSETS_TO_CACHE = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/icon.svg',
-  '/logo.png',
-  '/icon-192x192.png',
-  '/icon-512x512.png'
+  './',
+  './index.html',
+  './manifest.json',
+  './icon.svg',
+  './logo.png',
+  './icon-192x192.png',
+  './icon-512x512.png'
 ];
 
 // Instalación: Cachear activos estáticos

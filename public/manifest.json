@@ -2,20 +2,20 @@
   "name": "Barrioteca Acalencá",
   "short_name": "Barrioteca",
   "description": "Aplicación de gestión de préstamos de la Barrioteca de Acalencá",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#141414",
   "theme_color": "#141414",
-    "icons": [
+  "icons": [
     {
-      "src": "/icon-192x192.png",
+      "src": "./icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icon-512x512.png",
+      "src": "./icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"

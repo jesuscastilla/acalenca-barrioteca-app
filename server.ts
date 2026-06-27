@@ -13,6 +13,32 @@ async function startServer() {
 
   app.use(express.json());
 
+  // ─── Redirección HTTP → HTTPS ──────────────────────────────────
+  // Fuerza HTTPS en producción excepto para conexiones locales
+  if (process.env.NODE_ENV === "production") {
+    app.use((req, res, next) => {
+      // Si la petición llega por HTTP (puerto 80), redirigir a la misma URL por HTTPS
+      if (!req.secure && req.headers["x-forwarded-proto"] !== "https") {
+        return res.redirect(301, `https://${req.hostname}${req.originalUrl}`);
+      }
+      next();
+    });
+  }
+
+  // ─── Cabeceras de seguridad ────────────────────────────────────
+  app.use((req, res, next) => {
+    // HSTS: fuerza HTTPS durante 1 año, incluido en subdominios
+    res.setHeader(
+      "Strict-Transport-Security",
+      "max-age=31536000; includeSubDomains; preload"
+    );
+    // Evitar que el navegador haga MIME-type sniffing
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    // Evitar clickjacking
+    res.setHeader("X-Frame-Options", "DENY");
+    next();
+  });
+
   // URL base de la API de SLiMS en el NAS Synology
   // NOTA: Ajusta esta URL según la ruta real de tu instalación de SLiMS
   const SLIMS_API_BASE = process.env.SLIMS_API_BASE || "https://pelotxo.synology.me/slims/api/v1";
