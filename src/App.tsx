@@ -11,15 +11,12 @@ import {
   CheckCircle, 
   XCircle, 
   ArrowRightLeft, 
-  Trash2, 
   Code, 
   Globe, 
   Smartphone,
   Info,
   User,
   UserPlus,
-  Users,
-  Check,
   HelpCircle,
   X,
   Download
@@ -55,7 +52,7 @@ interface TransactionLog {
  */
 export default function App() {
   const [view, setView] = useState<View>('dashboard');
-  const [settingsSubView, setSettingsSubView] = useState<'socia' | 'help'>('socia');
+  const [settingsSubView, setSettingsSubView] = useState<'help'>('help');
   const endpoint = '/api';
   const [selectedAction, setSelectedAction] = useState<ActionType>('prestamo');
   const [manualCode, setManualCode] = useState('');
@@ -395,15 +392,6 @@ export default function App() {
     }
   };
 
-  const handleDeleteUser = (id: string) => {
-    if (window.confirm("¿Seguro que deseas eliminar a esta socia?")) {
-      setUsers(prev => prev.filter(u => u.id !== id));
-      if (activeUserId === id) {
-        setActiveUserId('');
-      }
-    }
-  };
-
   const handleScanSuccess = (scannedCode: string) => {
     if (selectedAction === 'prestamo' && !prestamoMemberId) {
       setPrestamoMemberId(scannedCode);
@@ -487,12 +475,12 @@ export default function App() {
 
                 {/* Descripción */}
                 <p className="text-xs text-white/70 leading-relaxed mb-4">
-                  Añade la app a tu pantalla de inicio para gestionar préstamos aunque no tengas conexión a internet.
+                  Añade la app a tu pantalla de inicio para un acceso más rápido desde tu dispositivo móvil.
                 </p>
 
                 {/* Beneficios */}
                 <div className="flex gap-2 mb-4">
-                  {['Sin navegador', 'Acceso offline', 'Notificaciones'].map(tag => (
+                  {['Sin navegador', 'Notificaciones'].map(tag => (
                     <span key={tag} className="text-[10px] font-bold bg-white/10 text-white/70 px-2.5 py-1 rounded-full">
                       {tag}
                     </span>
@@ -832,60 +820,6 @@ export default function App() {
               </div>
             )}
 
-            <div className="flex bg-white p-1 rounded-2xl border border-gray-200 shadow-sm mb-6">
-              <button 
-                onClick={() => setSettingsSubView('socia')}
-                className={`flex-1 py-2 rounded-xl text-xs font-bold uppercase transition-all flex items-center justify-center gap-2 ${settingsSubView === 'socia' ? 'bg-ink text-bg shadow-md' : 'text-gray-400'}`}
-              >
-                <Users size={14} /> Gestión Socias
-              </button>
-              <button 
-                onClick={() => setSettingsSubView('help')}
-                className={`flex-1 py-2 rounded-xl text-xs font-bold uppercase transition-all flex items-center justify-center gap-2 ${settingsSubView === 'help' ? 'bg-ink text-bg shadow-md' : 'text-gray-400'}`}
-              >
-                <HelpCircle size={14} /> Ayuda
-              </button>
-            </div>
-
-            {settingsSubView === 'socia' && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold uppercase tracking-widest opacity-60">Socias Guardadas</h3>
-                  <p className="text-[10px] opacity-40">Local Storage</p>
-                </div>
-                
-                <div className="grid gap-3">
-                  {users.map(user => (
-                    <div key={user.id} className="bg-white p-4 rounded-2xl border border-gray-100 flex items-center justify-between shadow-sm group">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-serif italic ${activeUserId === user.id ? 'bg-amber-500 text-black' : 'bg-gray-100 text-gray-400'}`}>
-                          {user.nombre.charAt(0)}
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold">{user.nombre}</p>
-                          <p className="text-[10px] font-mono opacity-50">{user.barcode}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
-                          onClick={() => { setActiveUserId(user.id); setPrestamoMemberId(user.barcode); }}
-                          className={`p-2 rounded-xl transition-colors ${activeUserId === user.id ? 'bg-amber-100 text-amber-600' : 'bg-gray-50 text-gray-400 hover:bg-gray-100'}`}
-                        >
-                          <Check size={16} />
-                        </button>
-                        <button 
-                          onClick={() => handleDeleteUser(user.id)}
-                          className="p-2 bg-red-50 text-red-400 rounded-xl hover:bg-red-100 transition-colors"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {settingsSubView === 'help' && (
               <div className="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm space-y-6">
                 <div className="space-y-2">
@@ -902,7 +836,7 @@ export default function App() {
                       { icon: <UserPlus size={14} />, text: "Identifícate con tu ID de socia en la pantalla principal." },
                       { icon: <Scan size={14} />, text: "Pulsa 'Escanear' y elige 'Préstamo' o 'Devolución'." },
                       { icon: <ArrowRightLeft size={14} />, text: "Escanea el código de barras del libro (ISBN o ASIN)." },
-                      { icon: <Smartphone size={14} />, text: "Instala la app en tu móvil para usarla sin conexión a internet." }
+                      { icon: <Smartphone size={14} />, text: "Instala la app en tu móvil para tener acceso directo desde la pantalla de inicio." }
                     ].map((item, i) => (
                       <li key={i} className="flex items-start gap-3 text-sm text-gray-600">
                         <div className="mt-0.5 text-amber-600">{item.icon}</div>

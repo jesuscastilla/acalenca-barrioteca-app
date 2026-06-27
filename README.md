@@ -19,7 +19,7 @@ Todo queda registrado en la base de datos de SLiMS, permitiendo saber en todo mo
 ## Características
 
 - **Escaneo de códigos**: Usa la cámara del móvil para leer códigos de barras (ISBN/ASIN) de libros y tarjetas de socias.
-- **Modo offline**: Al instalarse como app, funciona como aplicación nativa. Se puede usar sin conexión (el historial se guarda localmente).
+- **Acceso directo**: Al instalarse como app, funciona como aplicación nativa con acceso rápido desde la pantalla de inicio.
 - **Lenguaje inclusivo**: Interfaz en femenino (socia, autora, bienvenida), coherente con el espíritu del proyecto.
 - **Privacidad total**: Todo corre en el NAS de la barrioteca. No se comparten datos con terceros.
 - **HTTPS automático**: Redirección forzosa de HTTP a HTTPS para que la PWA sea instalable y los Service Workers funcionen correctamente.
