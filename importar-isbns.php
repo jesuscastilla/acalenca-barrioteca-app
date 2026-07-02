@@ -6,15 +6,20 @@
  * para cada uno, y guarda los datos directamente en SLiMS.
  *
  * USO:
- *   1. Pon tu clave de Google Books en $google_api_key
+ *   1. Configura tu api-config.php con GOOGLE_BOOKS_API_KEY y SLIMS_API_BASE
  *   2. Crea un CSV con un ISBN por línea (ej: mis-isbns.csv)
  *   3. Coloca el CSV en la misma carpeta que este script
- *   4. Accede a: https://pelotxo.synology.me/barrioteca/importar-isbns.php
+ *   4. Accede a: https://tu-dominio/barrioteca/importar-isbns.php
  */
 
-// ─── CONFIGURACIÓN ─────────────────────────────────────
+// ─── Cargar configuración ─────────────────────────────
+if (file_exists(__DIR__ . '/api-config.php')) {
+    require __DIR__ . '/api-config.php';
+}
+$google_api_key = defined('GOOGLE_BOOKS_API_KEY') ? GOOGLE_BOOKS_API_KEY : '';
+$SLIMS_API_BASE = defined('SLIMS_API_BASE') ? SLIMS_API_BASE : 'http://localhost/slims/api/index.php';
+
 $csv_file = __DIR__ . '/mis-isbns.csv';  // Tu CSV con los ISBNs
-$google_api_key = '';  // ← PON AQUÍ TU CLAVE DE GOOGLE BOOKS
 // ───────────────────────────────────────────────────────
 
 header('Content-Type: text/plain; charset=utf-8');
@@ -47,7 +52,13 @@ echo "📚 $total ISBNs en el CSV.\n\n";
 define('INDEX_AUTH', '1');
 define('DB_ACCESS', 'fa');
 $_SERVER['REQUEST_METHOD'] = 'GET';
-require __DIR__ . '/../slims/sysconfig.inc.php';
+
+// Intentar cargar configuración de SLiMS desde ruta relativa
+$slimsConfig = __DIR__ . '/../slims/sysconfig.inc.php';
+if (!file_exists($slimsConfig)) {
+    die("❌ No se encuentra SLiMS en: " . realpath(__DIR__ . '/../slims') . "\n");
+}
+require $slimsConfig;
 
 $ok = 0;
 $err = 0;

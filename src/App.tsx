@@ -47,6 +47,32 @@ interface TransactionLog {
 }
 
 /**
+ * Detecta automáticamente qué backend usar.
+ * - Si estamos corriendo con el servidor Node.js (dev o producción con Vite/Express), usa /api
+ * - Si estamos en un servidor PHP (Apache/Nginx con api-proxy.php), usa ./api-proxy.php
+ */
+function detectEndpoint(): string {
+  // En desarrollo, Vite corre en 5173 y el servidor Express en 3000.
+  // Si la página se sirvió desde localhost con puerto 3000 o similar, es Node.js.
+  // Si no, asumimos que estamos en producción PHP (api-proxy.php).
+  const host = window.location.host;
+  const port = window.location.port;
+  
+  // Si estamos en localhost con puerto 3000 (servidor Express de server.ts)
+  if (host.startsWith('localhost') || host.startsWith('127.0.0.1')) {
+    if (port === '3000' || port === '') {
+      // Servidor Node.js (server.ts sirve Vite en dev y estáticos en prod)
+      return '/api';
+    }
+  }
+  
+  // Producción con Node.js: el build se sirve desde Express (que también expone /api)
+  // Si no hay PHP disponible, usamos /api como fallback
+  // Pero en producción real con Synology, usaremos api-proxy.php
+  return './api-proxy.php';
+}
+
+/**
  * Componente principal de la PWA Barrioteca Acalencá
  * Gestiona la navegación, el estado de las socias y las operaciones de préstamo/devolución
  */
@@ -54,16 +80,14 @@ export default function App() {
   const [view, setView] = useState<View>('dashboard');
   const [settingsSubView, setSettingsSubView] = useState<'help'>('help');
   // Ruta base para llamadas a la API.
-  // Usamos ruta RELATIVA (./api-proxy.php) para que funcione con Nginx
-  // sin necesidad de reglas de reescritura. El navegador la resuelve
-  // contra la URL actual (ej: /barrioteca/api-proxy.php?action=verify-member).
-  const endpoint = './api-proxy.php';
+  // Detección automática: /api para Node.js, ./api-proxy.php para PHP
+  const [endpoint] = useState<string>(() => detectEndpoint());
   const [selectedAction, setSelectedAction] = useState<ActionType>('prestamo');
   const [manualCode, setManualCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
 
-  // Estado de socias (vaciado de datos de prueba)
+  // Estado de socias
   const [users, setUsers] = useState<LibraryUser[]>(() => {
     const saved = localStorage.getItem('barrioteca_users');
     if (saved) return JSON.parse(saved);
@@ -111,14 +135,16 @@ export default function App() {
     }
 
     const dismissed = localStorage.getItem('pwa_install_dismissed');
+    // Si ya se descartó, no volver a mostrar
+    if (dismissed) return;
 
     const handleBeforeInstallPrompt = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
       setIsInstallable(true);
 
-      // Mostrar toast automático tras 3 segundos si el usuario no lo descartó antes
-      if (!dismissed) {
+      // Mostrar toast automático tras 3 segundos si no fue descartado
+      if (!localStorage.getItem('pwa_install_dismissed')) {
         setTimeout(() => setShowInstallToast(true), 3000);
       }
     };
@@ -161,6 +187,26 @@ export default function App() {
   const activeUser = users.find(u => u.id === activeUserId);
 
   /**
+   * Construye la URL del endpoint según el backend detectado
+   */
+  const buildUrl = (action: string, params?: Record<string, string>): string => {
+    if (endpoint === '/api') {
+      // Backend Node.js: /api/verify-member, /api/book-metadata?isbn=X, etc.
+      let url = `${endpoint}/${action}`;
+      if (params) {
+        const qs = new URLSearchParams(params).toString();
+        url += `?${qs}`;
+      }
+      return url;
+    } else {
+      // Backend PHP: ./api-proxy.php?action=verify-member&isbn=X, etc.
+      const allParams = { action, ...(params || {}) };
+      const qs = new URLSearchParams(allParams).toString();
+      return `${endpoint}?${qs}`;
+    }
+  };
+
+  /**
    * Verificar la identidad de una socia contra el servidor SLiMS
    */
   const handleLogin = async (term: string) => {
@@ -170,7 +216,7 @@ export default function App() {
 
     setIsLoggingIn(true);
     try {
-      const response = await fetch(`${endpoint}?action=verify-member`, {
+      const response = await fetch(buildUrl('verify-member'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -249,7 +295,7 @@ export default function App() {
     }
 
     // Verificar contra SLiMS que la socia sigue existiendo
-    fetch(`${endpoint}?action=verify-member`, {
+    fetch(buildUrl('verify-member'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({ member_id: storedUser.barcode || storedUser.id })
@@ -308,11 +354,11 @@ export default function App() {
     let bookTitle: string | undefined = undefined;
     let bookAuthor: string | undefined = undefined;
     
-    // Consultar metadatos del libro a través del proxy del servidor (usa API Key desde backend)
+    // Consultar metadatos del libro a través del proxy (usa API Key desde backend)
     try {
       const cleanCode = codeValue.replace(/[-\s]/g, '').trim();
       if (cleanCode.length >= 8) {
-        const bookResponse = await axios.get(`${endpoint}?action=book-metadata&isbn=${cleanCode}`, { timeout: 5000 });
+        const bookResponse = await axios.get(buildUrl('book-metadata', { isbn: cleanCode }), { timeout: 5000 });
         if (bookResponse.data && bookResponse.data.status === 'success' && bookResponse.data.data) {
           bookTitle = bookResponse.data.data.title;
           bookAuthor = bookResponse.data.data.authors || 'Autora Desconocida';
@@ -325,14 +371,14 @@ export default function App() {
     try {
       const payload: any = {
         accion: actionType,
-        asin: codeValue.trim()
+        code: codeValue.trim()
       };
 
       if (actionType === 'prestamo') {
-        payload.id_socia = prestamoMemberId || activeUser?.barcode || sessionStorage.getItem('id_socia') || "";
+        payload.member_id = prestamoMemberId || activeUser?.barcode || sessionStorage.getItem('id_socia') || "";
       }
 
-      const response = await fetch(`${endpoint}?action=perform-action`, {
+      const response = await fetch(buildUrl('perform-action'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -442,7 +488,7 @@ export default function App() {
 
       {/* ── Toast de instalación PWA ── */}
       <AnimatePresence>
-        {showInstallToast && isInstallable && (
+        {showInstallToast && isInstallable && !localStorage.getItem('pwa_install_dismissed') && (
           <motion.div
             id="pwa-install-toast"
             initial={{ opacity: 0, y: 80, scale: 0.92 }}
@@ -787,7 +833,7 @@ export default function App() {
             </div>
 
             {/* ── Banner instalar PWA en Ajustes ── */}
-            {!isInstalled && isInstallable && (
+            {!isInstalled && isInstallable && !localStorage.getItem('pwa_install_dismissed') && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}

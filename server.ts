@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
@@ -9,7 +10,7 @@ import axios from "axios";
  */
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = parseInt(process.env.PORT || "3000", 10);
 
   app.use(express.json());
 
@@ -17,7 +18,6 @@ async function startServer() {
   // Fuerza HTTPS en producción excepto para conexiones locales
   if (process.env.NODE_ENV === "production") {
     app.use((req, res, next) => {
-      // Si la petición llega por HTTP (puerto 80), redirigir a la misma URL por HTTPS
       if (!req.secure && req.headers["x-forwarded-proto"] !== "https") {
         return res.redirect(301, `https://${req.hostname}${req.originalUrl}`);
       }
@@ -27,21 +27,20 @@ async function startServer() {
 
   // ─── Cabeceras de seguridad ────────────────────────────────────
   app.use((req, res, next) => {
-    // HSTS: fuerza HTTPS durante 1 año, incluido en subdominios
     res.setHeader(
       "Strict-Transport-Security",
       "max-age=31536000; includeSubDomains; preload"
     );
-    // Evitar que el navegador haga MIME-type sniffing
     res.setHeader("X-Content-Type-Options", "nosniff");
-    // Evitar clickjacking
     res.setHeader("X-Frame-Options", "DENY");
     next();
   });
 
-  // URL base de la API de SLiMS en el NAS Synology
-  // NOTA: Ajusta esta URL según la ruta real de tu instalación de SLiMS
-  const SLIMS_API_BASE = process.env.SLIMS_API_BASE || "https://pelotxo.synology.me/slims/api/v1";
+  // URL base de la API de SLiMS — configurable mediante variable de entorno
+  const SLIMS_API_BASE =
+    process.env.SLIMS_API_BASE || "http://localhost/slims/api/index.php";
+
+  console.log(`[server] SLiMS API base: ${SLIMS_API_BASE}`);
 
   /**
    * Verificar si una socia existe en SLiMS
@@ -52,40 +51,57 @@ async function startServer() {
     const { member_id } = req.body;
 
     if (!member_id) {
-      return res.status(400).json({ 
-        status: "error", 
-        message: "El ID de la socia es obligatorio." 
+      return res.status(400).json({
+        status: "error",
+        message: "El ID de la socia es obligatorio.",
       });
     }
 
     try {
+      console.log(`[verify-member] Consultando socia: ${member_id}`);
       const response = await axios.get(
-        `${SLIMS_API_BASE}/member/${encodeURIComponent(member_id)}/verify`,
+        `${SLIMS_API_BASE}?_api_path=/member/${encodeURIComponent(member_id)}/verify`,
         {
           headers: {
-            "Accept": "application/json",
-            "User-Agent": "Barrioteca-PWA/1.0"
+            Accept: "application/json",
+            "User-Agent": "Barrioteca-PWA/1.0",
           },
-          timeout: 8000
+          timeout: 8000,
         }
       );
 
-      // Reenviar la respuesta de SLiMS directamente
+      console.log(`[verify-member] Respuesta SLiMS (${response.status}):`, JSON.stringify(response.data).substring(0, 200));
+
+      // Transformar la respuesta para que el frontend reciba siempre { status, data, message }
+      if (response.data.status === "success" && response.data.data) {
+        return res.json({
+          status: "success",
+          message: `Socia verificada: ${response.data.data.member_name || member_id}`,
+          data: {
+            member_id: response.data.data.member_id || member_id,
+            member_name: response.data.data.member_name || `Socia ${member_id}`,
+            ...response.data.data,
+          },
+        });
+      }
+
       return res.json(response.data);
     } catch (error: any) {
-      console.error("Error al verificar socia:", error.message);
-      
+      console.error("[verify-member] Error:", error.message);
+      console.error("[verify-member] SLiMS status:", error.response?.status);
+      console.error("[verify-member] SLiMS data:", error.response?.data);
+
       return res.status(error.response?.status || 500).json({
         status: "error",
-        message: error.response?.data?.message || "Error al verificar a la socia."
+        message:
+          error.response?.data?.message || "Error al verificar a la socia.",
       });
     }
   });
 
   /**
    * Consultar disponibilidad de un libro
-   * GET /api/item-status
-   * Parámetros: { isbn: string }
+   * GET /api/item-status?isbn=XXXXXXXX
    */
   app.get("/api/item-status", async (req, res) => {
     const { isbn } = req.query;
@@ -93,29 +109,31 @@ async function startServer() {
     if (!isbn) {
       return res.status(400).json({
         status: "error",
-        message: "El ISBN/ASIN es obligatorio."
+        message: "El ISBN/ASIN es obligatorio.",
       });
     }
 
     try {
       const response = await axios.get(
-        `${SLIMS_API_BASE}/item/${encodeURIComponent(isbn as string)}/status`,
+        `${SLIMS_API_BASE}?_api_path=/item/${encodeURIComponent(isbn as string)}/status`,
         {
           headers: {
-            "Accept": "application/json",
-            "User-Agent": "Barrioteca-PWA/1.0"
+            Accept: "application/json",
+            "User-Agent": "Barrioteca-PWA/1.0",
           },
-          timeout: 8000
+          timeout: 8000,
         }
       );
 
       return res.json(response.data);
     } catch (error: any) {
-      console.error("Error al consultar estado del item:", error.message);
-      
+      console.error("[item-status] Error:", error.message);
+
       return res.status(error.response?.status || 500).json({
         status: "error",
-        message: error.response?.data?.message || "Error al consultar disponibilidad del libro."
+        message:
+          error.response?.data?.message ||
+          "Error al consultar disponibilidad del libro.",
       });
     }
   });
@@ -123,62 +141,58 @@ async function startServer() {
   /**
    * Registrar una operación (Préstamo o Devolución)
    * POST /api/perform-action
-   * Cuerpo: { accion: "prestamo" | "devolucion", member_id: string, item_code: string }
-   * 
-   * Este endpoint unificado mantiene compatibilidad con la interfaz de la PWA
+   * Cuerpo: { accion: "prestamo" | "devolucion", member_id: string, code: string }
    */
   app.post("/api/perform-action", async (req, res) => {
-    const {
-      accion,
-      code,
-      id_socia,
-      id_socio,
-      member_id,
-      member_code,
-      asin,
-      isbn
-    } = req.body;
+    const { accion, code, member_id } = req.body;
 
     if (!accion) {
       return res.status(400).json({
         status: "error",
-        message: "Faltan parámetros requeridos: 'accion'"
+        message: "Faltan parámetros requeridos: 'accion'",
       });
     }
 
     const lowerAccion = accion.toLowerCase();
-    // Normalizar identificadores para manejar diferentes versiones de la interfaz
-    const finalMemberId = (id_socia || id_socio || member_id || member_code || "").trim();
-    const finalItemCode = (asin || code || isbn || "").trim();
+    const finalMemberId = (member_id || "").trim();
+    const finalItemCode = (code || "").trim();
+
+    console.log(`[perform-action] Acción: ${lowerAccion}, member: ${finalMemberId}, item: ${finalItemCode}`);
 
     try {
-      // Acción: Verificar socia
-      if (["verificar_socia", "verificar_socio", "login", "verificar"].includes(lowerAccion)) {
+      // Acción: Verificar socia (redirigido desde perform-action)
+      if (
+        ["verificar_socia", "verificar_socio", "login", "verificar"].includes(
+          lowerAccion
+        )
+      ) {
         if (!finalMemberId) {
           return res.status(400).json({
             status: "error",
-            message: "El ID de la socia es obligatorio."
+            message: "El ID de la socia es obligatorio.",
           });
         }
 
         const response = await axios.get(
-          `${SLIMS_API_BASE}/member/${encodeURIComponent(finalMemberId)}/verify`,
+          `${SLIMS_API_BASE}?_api_path=/member/${encodeURIComponent(finalMemberId)}/verify`,
           {
             headers: {
-              "Accept": "application/json",
-              "User-Agent": "Barrioteca-PWA/1.0"
+              Accept: "application/json",
+              "User-Agent": "Barrioteca-PWA/1.0",
             },
-            timeout: 8000
+            timeout: 8000,
           }
         );
 
-        // Transformar la respuesta para compatibilidad con el frontend de la PWA
         if (response.data.status === "success" && response.data.data) {
           return res.json({
             status: "success",
-            nombre: response.data.data.member_name,
             message: `Acceso concedido a ${response.data.data.member_name}.`,
-            data: response.data.data
+            data: {
+              member_id: finalMemberId,
+              member_name: response.data.data.member_name,
+              ...response.data.data,
+            },
           });
         }
 
@@ -190,26 +204,29 @@ async function startServer() {
         if (!finalMemberId || !finalItemCode) {
           return res.status(400).json({
             status: "error",
-            message: "Faltan datos para el préstamo (ID de socia y código de libro)."
+            message:
+              "Faltan datos para el préstamo (ID de socia y código de libro).",
           });
         }
 
+        // Enviar como POST a SLiMS con los parámetros en el body
         const response = await axios.post(
-          `${SLIMS_API_BASE}/loan/borrow`,
+          `${SLIMS_API_BASE}?_api_path=/loan/borrow`,
           {
             member_id: finalMemberId,
-            item_code: finalItemCode
+            item_code: finalItemCode,
           },
           {
             headers: {
               "Content-Type": "application/json",
-              "Accept": "application/json",
-              "User-Agent": "Barrioteca-PWA/1.0"
+              Accept: "application/json",
+              "User-Agent": "Barrioteca-PWA/1.0",
             },
-            timeout: 8000
+            timeout: 8000,
           }
         );
 
+        console.log(`[perform-action] Préstamo OK:`, JSON.stringify(response.data).substring(0, 200));
         return res.json(response.data);
       }
 
@@ -218,25 +235,26 @@ async function startServer() {
         if (!finalItemCode) {
           return res.status(400).json({
             status: "error",
-            message: "Falta el código del libro para la devolución."
+            message: "Falta el código del libro para la devolución.",
           });
         }
 
         const response = await axios.post(
-          `${SLIMS_API_BASE}/loan/return`,
+          `${SLIMS_API_BASE}?_api_path=/loan/return`,
           {
-            item_code: finalItemCode
+            item_code: finalItemCode,
           },
           {
             headers: {
               "Content-Type": "application/json",
-              "Accept": "application/json",
-              "User-Agent": "Barrioteca-PWA/1.0"
+              Accept: "application/json",
+              "User-Agent": "Barrioteca-PWA/1.0",
             },
-            timeout: 8000
+            timeout: 8000,
           }
         );
 
+        console.log(`[perform-action] Devolución OK:`, JSON.stringify(response.data).substring(0, 200));
         return res.json(response.data);
       }
 
@@ -244,21 +262,23 @@ async function startServer() {
       else {
         return res.status(400).json({
           status: "error",
-          message: `Acción desconocida: ${accion}`
+          message: `Acción desconocida: ${accion}`,
         });
       }
     } catch (error: any) {
-      console.error("Error al ejecutar acción:", error.message);
+      console.error("[perform-action] Error:", error.message);
+      console.error("[perform-action] SLiMS status:", error.response?.status);
+      console.error("[perform-action] SLiMS data:", error.response?.data);
 
-      // Devolver el error específico de SLiMS si existe
       if (error.response?.data) {
-        return res.status(error.response.status || 500).json(error.response.data);
+        return res
+          .status(error.response.status || 500)
+          .json(error.response.data);
       }
 
-      // Error genérico de red o servidor
       return res.status(500).json({
         status: "error",
-        message: `Error al conectar con SLiMS: ${error.message}`
+        message: `Error al conectar con SLiMS: ${error.message}`,
       });
     }
   });
@@ -266,16 +286,14 @@ async function startServer() {
   /**
    * Proxy para obtener metadatos de un libro desde Google Books
    * GET /api/book-metadata?isbn=XXXXXXXX
-   * 
-   * Esto evita exponer la API Key de Google Books en el frontend.
-   * La API Key se lee desde variable de entorno GOOGLE_BOOKS_API_KEY
-   * o desde un archivo .env en la raíz de la PWA.
    */
   app.get("/api/book-metadata", async (req, res) => {
     const { isbn } = req.query;
 
     if (!isbn) {
-      return res.status(400).json({ status: "error", message: "ISBN requerido" });
+      return res
+        .status(400)
+        .json({ status: "error", message: "ISBN requerido" });
     }
 
     const cleanIsbn = (isbn as string).replace(/[-\s]/g, "").trim();
@@ -294,22 +312,24 @@ async function startServer() {
           data: {
             title: info.title || null,
             authors: info.authors ? info.authors.join(", ") : null,
-            image: info.imageLinks?.thumbnail || null
-          }
+            image: info.imageLinks?.thumbnail || null,
+          },
         });
       }
 
       return res.json({ status: "success", data: null });
     } catch (error: any) {
-      console.error("Error al consultar metadatos del libro:", error.message);
-      return res.status(500).json({ status: "error", message: "No se pudieron obtener los metadatos." });
+      console.error("[book-metadata] Error:", error.message);
+      return res.status(500).json({
+        status: "error",
+        message: "No se pudieron obtener los metadatos.",
+      });
     }
   });
 
   /**
    * Proxy para búsqueda en el catálogo
-   * GET /api/catalog-proxy
-   * Parámetros: { q: string }
+   * GET /api/catalog-proxy?q=...
    */
   app.get("/api/catalog-proxy", async (req, res) => {
     const { q } = req.query;
@@ -319,27 +339,32 @@ async function startServer() {
     }
 
     try {
-      const response = await axios.get(`${SLIMS_API_BASE}/biblio/search?q=${encodeURIComponent(q as string)}`, {
-        headers: {
-          "Accept": "application/json",
-          "User-Agent": "Barrioteca-PWA/1.0"
-        },
-        timeout: 8000
-      });
-      
-      // Mapear resultados al formato esperado por CatalogSearch.tsx
-      const results = response.data.map((item: any) => ({
-        id: item.biblio_id,
-        title: item.title,
-        author: item.author || "Autora Desconocida",
-        isbn: item.isbn_issn,
-        status: item.is_available ? "disponible" : "prestada",
-        image: item.image
-      }));
+      const response = await axios.get(
+        `${SLIMS_API_BASE}?_api_path=/biblio/search&q=${encodeURIComponent(q as string)}`,
+        {
+          headers: {
+            Accept: "application/json",
+            "User-Agent": "Barrioteca-PWA/1.0",
+          },
+          timeout: 8000,
+        }
+      );
 
-      return res.json(results);
+      if (Array.isArray(response.data)) {
+        const results = response.data.map((item: any) => ({
+          id: item.biblio_id,
+          title: item.title,
+          author: item.author || "Autora Desconocida",
+          isbn: item.isbn_issn,
+          status: item.is_available ? "disponible" : "prestada",
+          image: item.image,
+        }));
+        return res.json(results);
+      }
+
+      return res.json([]);
     } catch (error: any) {
-      console.error("Error al buscar en catálogo:", error.message);
+      console.error("[catalog-proxy] Error:", error.message);
       return res.json([]);
     }
   });
@@ -353,16 +378,17 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     // Servir archivos estáticos en producción
-    const distPath = path.join(process.cwd(), 'dist');
+    const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
+    app.get("*", (req, res) => {
+      res.sendFile(path.join(distPath, "index.html"));
     });
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Servidor PWA ejecutándose en http://localhost:${PORT}`);
-    console.log(`Conectado a la API de SLiMS en: ${SLIMS_API_BASE}`);
+    console.log(`[server] PWA ejecutándose en http://localhost:${PORT}`);
+    console.log(`[server] SLiMS API: ${SLIMS_API_BASE}`);
+    console.log(`[server] Modo: ${process.env.NODE_ENV || "development"}`);
   });
 }
 

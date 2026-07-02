@@ -1,39 +1,181 @@
-# Guía de Despliegue Final: Barrioteca Acalencá
+# 🚀 Guía de Despliegue — Barrioteca Acalencá
 
-Este proyecto ha sido optimizado y limpiado para su despliegue inmediato en tu NAS Synology. Se ha feminizado todo el lenguaje del frontend para una experiencia más inclusiva y cercana.
+Esta guía explica cómo desplegar las dos aplicaciones que componen el sistema:
+1. **La PWA** (frontend React + backend proxy)
+2. **SLiMS** (sistema de gestión bibliotecaria en el NAS Synology)
 
-## Cambios Realizados
+---
 
-1.  **Limpieza de Código**: Se ha eliminado el archivo `api.php` legacy. Ahora todo el tráfico fluye a través de la API moderna en `api/v1/`.
-2.  **Lenguaje Feminizado**: Se han actualizado todos los componentes de la PWA (`App.tsx`, `CatalogSearch.tsx`, `Scanner.tsx`) para usar términos como **"Socia"**, **"Autora"**, **"Bienvenida"**, etc.
-3.  **Unificación de API**: La PWA utiliza un proxy interno (`/api`) que se comunica con SLiMS de forma segura.
-4.  **Optimización para NAS**: Configurado para funcionar con MariaDB en el puerto 3007 de tu Synology.
+## 📐 Arquitectura
 
-## Instrucciones de Despliegue en Synology NAS
+```
+📱 Navegador móvil (PWA instalada o web)
+         │
+         ▼
+┌─────────────────────────────────────┐
+│  Proxy API (Node.js Express o PHP)  │  ← Este proyecto
+│  • /api/verify-member               │
+│  • /api/perform-action              │
+│  • /api/book-metadata               │
+│  • /api/catalog-proxy               │
+└──────────────┬──────────────────────┘
+               │
+               ▼
+┌──────────────────────────────┐
+│  SLiMS API (NAS Synology)    │
+│  /slims/api/index.php        │
+│  • /member/{id}/verify        │
+│  • /loan/borrow               │
+│  • /loan/return               │
+│  • /biblio/search             │
+└──────────────────────────────┘
+```
 
-### 1. Base de Datos
-Asegúrate de que MariaDB esté funcionando en el puerto 3007 con el usuario `acalenca` y la base de datos `acalenca`.
+---
 
-### 2. Servidor Web
-Sube la carpeta `acalenca-barrioteca` a tu servidor web (Apache/Nginx) en el NAS.
+## 🔧 Opciones de Despliegue
 
-### 3. PWA (Frontend)
-La PWA se ejecuta mediante Node.js. Asegúrate de tener Node.js instalado en tu NAS y ejecuta:
+### Opción A: Node.js (recomendado para desarrollo y producción ligera)
+
+El servidor `server.ts` usa Express.js y actúa como proxy hacia SLiMS **y** sirve los archivos estáticos de la PWA.
+
+**Requisitos:** Node.js 18+ en el NAS Synology.
+
 ```bash
+# 1. Instalar dependencias
 npm install
+
+# 2. Configurar variables de entorno
+cp .env.example .env
+# Edita .env con tus valores:
+#   SLIMS_API_BASE=http://localhost/slims/api/index.php
+#   GOOGLE_BOOKS_API_KEY=tu-clave-opcional
+#   PORT=3000
+#   NODE_ENV=production
+
+# 3. Construir la PWA para producción
 npm run build
+
+# 4. Iniciar el servidor
 npm start
 ```
 
-### 4. Configuración del Reverse Proxy (Opcional pero recomendado)
-Para que la PWA sea instalable (HTTPS), ve a:
-**Panel de Control > Portal de Inicio de Sesión > Avanzado > Proxy Inverso**
-- Crea una regla que apunte tu dominio (ej: `https://biblioteca.tu-nas.me`) al puerto `3000` del servidor de la PWA.
+El servidor escuchará en `http://0.0.0.0:3000`. Configura un **proxy inverso** en Synology para exponerlo por HTTPS (puerto 443).
 
-## Notas de Uso
-- **Identificación**: La primera vez, introduce tu código de socia para activar la sesión.
-- **Escáner**: Puedes usar la cámara en vivo o tomar una foto del código de barras si el navegador restringe el acceso a la cámara.
-- **Catálogo**: Busca libros por título o autora directamente desde la app.
+### Opción B: PHP + Apache/Nginx (recomendado para NAS con servidor web)
+
+El archivo `api-proxy.php` actúa como proxy hacia SLiMS. La PWA se sirve como archivos estáticos desde el servidor web del NAS.
+
+**Requisitos:** Apache o Nginx con PHP 7.4+ y cURL habilitado.
+
+```bash
+# 1. Subir la carpeta del proyecto al NAS
+#    Ejemplo: /var/services/web/barrioteca/
+
+# 2. Configurar api-config.php
+cp api-config.example.php api-config.php
+# Edita api-config.php con tus valores:
+#   define('GOOGLE_BOOKS_API_KEY', 'tu-clave');
+#   define('SLIMS_API_BASE', 'http://localhost/slims/api/index.php');
+
+# 3. Configurar .htaccess (si usas Apache)
+#    Copia el contenido de htaccess.root en la raíz del servidor web
+#    o configura Nginx para enrutar /api/* a api-proxy.php
+
+# 4. Construir la PWA
+npm install
+npm run build
+
+# 5. Copiar la carpeta dist/ al NAS o configurar el DocumentRoot
+```
 
 ---
-*Proyecto preparado para la Barrioteca de Acalencá.*
+
+## ⚙️ Variables de Entorno y Configuración
+
+### Para Node.js (server.ts)
+
+Copia `.env.example` → `.env` y configura:
+
+| Variable | Descripción | Ejemplo |
+|----------|------------|---------|
+| `SLIMS_API_BASE` | URL base de la API de SLiMS | `http://localhost/slims/api/index.php` |
+| `GOOGLE_BOOKS_API_KEY` | Clave de Google Books API (opcional) | `AIzaSy...` |
+| `PORT` | Puerto del servidor | `3000` |
+| `NODE_ENV` | Entorno | `production` |
+
+### Para PHP (api-proxy.php)
+
+Copia `api-config.example.php` → `api-config.php` y configura:
+
+| Constante | Descripción | Ejemplo |
+|-----------|------------|---------|
+| `GOOGLE_BOOKS_API_KEY` | Clave de Google Books API (opcional) | `'AIzaSy...'` |
+| `SLIMS_API_BASE` | URL base de la API de SLiMS | `'http://localhost/slims/api/index.php'` |
+
+---
+
+## 🔒 Configuración de HTTPS
+
+La PWA requiere HTTPS para funcionar correctamente (service workers, instalación, etc.).
+
+1. En el NAS Synology, ve a **Panel de Control → Portal de Inicio de Sesión → Avanzado → Proxy Inverso**.
+2. Crea una regla:
+   - **Origen**: `https://TU-DOMINIO.synology.me` (puerto 443)
+   - **Destino**: `http://localhost:3000` (o el puerto que uses)
+3. Asegúrate de tener un certificado SSL válido (Let's Encrypt gratuito desde Synology).
+
+---
+
+## 📁 Estructura de Archivos
+
+```
+barrioteca/
+├── src/                    # Código fuente React
+│   ├── App.tsx             # Componente principal
+│   ├── main.tsx            # Punto de entrada
+│   └── components/         # Componentes (Scanner, CatalogSearch, BorrowedBooks)
+├── public/                 # Archivos estáticos
+│   ├── manifest.json       # Configuración PWA
+│   ├── sw.js               # Service Worker
+│   └── icon*.png           # Iconos PWA
+├── server.ts               # Servidor Node.js (proxy + estáticos)
+├── api-proxy.php           # Proxy PHP alternativo
+├── api-config.example.php  # Plantilla de configuración PHP
+├── .env.example            # Plantilla de variables de entorno Node.js
+├── package.json            # Dependencias y scripts
+├── vite.config.ts          # Configuración de Vite
+├── tsconfig.json           # Configuración de TypeScript
+└── DEPLOYMENT_GUIDE.md     # Esta guía
+```
+
+---
+
+## 🧪 Verificación del Despliegue
+
+1. **Probar la API**: Accede a `https://TU-DOMINIO/barrioteca/diagnostico.php` para verificar la conexión con SLiMS.
+2. **Probar la PWA**: Abre la app en un móvil y verifica que:
+   - Puedes iniciar sesión con un ID de socia válido
+   - El escáner funciona (pide permisos de cámara)
+   - Aparece el banner de instalación PWA
+   - Puedes buscar en el catálogo
+3. **Probar préstamo/devolución**: Realiza un préstamo y una devolución con un libro de prueba.
+
+---
+
+## 🔄 Actualización de la PWA
+
+Para actualizar la PWA a una nueva versión:
+
+```bash
+git pull
+npm install
+npm run build
+# Reiniciar el servidor Node.js o recargar Apache/Nginx
+```
+
+El Service Worker se actualizará automáticamente en los dispositivos de las usuarias la próxima vez que abran la app.
+
+---
+
+> **Nota**: Los archivos `.env` y `api-config.php` contienen información sensible y **nunca** deben subirse al repositorio. Ya están incluidos en `.gitignore`.

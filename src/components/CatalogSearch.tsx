@@ -12,7 +12,11 @@ interface CatalogBook {
   image?: string;
 }
 
-export const CatalogSearch: React.FC = () => {
+interface CatalogSearchProps {
+  onBack: () => void;
+}
+
+export const CatalogSearch: React.FC<CatalogSearchProps> = ({ onBack }) => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<CatalogBook[]>([]);
   const [loading, setLoading] = useState(false);

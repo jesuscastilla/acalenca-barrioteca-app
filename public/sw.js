@@ -41,8 +41,8 @@ self.addEventListener('activate', (event) => {
 
 // Estrategia de Fetch: Network First con fallback a Cache
 self.addEventListener('fetch', (event) => {
-  // No cachear peticiones a la API
-  if (event.request.url.includes('/api/')) {
+  // No cachear peticiones a la API ni al proxy PHP
+  if (event.request.url.includes('/api/') || event.request.url.includes('api-proxy.php')) {
     return;
   }
 

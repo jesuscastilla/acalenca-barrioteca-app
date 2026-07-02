@@ -12,3 +12,9 @@
 // Activa la API "Books API" y crea una credencial de tipo "API Key"
 define('GOOGLE_BOOKS_API_KEY', '');
 // ⬆️  Pon tu clave entre las comillas, ej: 'AIzaSyB1X1X1X1X1X1X1X1X1X1X1X1X1X1X1'
+
+// URL base de la API de SLiMS en tu NAS Synology
+// En desarrollo local:       http://localhost/slims/api/index.php
+// En producción con dominio: https://TU-DOMINIO.synology.me/slims/api/index.php
+define('SLIMS_API_BASE', 'http://localhost/slims/api/index.php');
+// ⬆️  Cambia esta URL según tu entorno de despliegue

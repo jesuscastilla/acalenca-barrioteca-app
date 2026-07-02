@@ -4,8 +4,21 @@ dist/
 coverage/
 .DS_Store
 *.log
-.env*
-!.env.example
 
-# Configuración sensible de la API (claves, tokens...)
+# Variables de entorno (contienen claves y URLs privadas)
+.env
+.env.local
+.env.*.local
+
+# Configuración sensible de la API
 api-config.php
+
+# Archivos con datos personales
+diagnostico.log
+diagnostico_resultados.json
+importar-isbns.conf
+*.csv
+mis-isbns.csv
+
+# Dependencias
+package-lock.json

@@ -4,7 +4,7 @@ Aplicación Web Progresiva (PWA) para la gestión vecinal de préstamos y devolu
 
 ## ¿Qué es la Barrioteca Acalencá?
 
-Somos una biblioteca vecinal autogestionada. Cualquier vecina puede sociarse, llevarse libros en préstamo y devolverlos cuando termine de leerlos. Todo el sistema funciona con software libre (SLiMS + PWA) alojado en un NAS Synology de la propia barrioteca, sin depender de servicios externos ni ceder datos a terceros.
+Somos una biblioteca vecinal autogestionada. Cualquier vecina puede asociarse, llevarse libros en préstamo y devolverlos cuando termine de leerlos. Todo el sistema funciona con software libre (SLiMS + PWA) alojado en un NAS Synology de la propia barrioteca, sin depender de servicios externos ni ceder datos a terceros.
 
 ## Cómo funciona la autogestión
 
@@ -23,12 +23,14 @@ Todo queda registrado en la base de datos de SLiMS, permitiendo saber en todo mo
 - **Lenguaje inclusivo**: Interfaz en femenino (socia, autora, bienvenida), coherente con el espíritu del proyecto.
 - **Privacidad total**: Todo corre en el NAS de la barrioteca. No se comparten datos con terceros.
 - **HTTPS automático**: Redirección forzosa de HTTP a HTTPS para que la PWA sea instalable y los Service Workers funcionen correctamente.
+- **Dos modos de backend**: Puede funcionar con Node.js (Express) o con PHP (Apache/Nginx) como proxy hacia SLiMS.
 
 ## Tecnología
 
 - **Frontend**: React 19 + TypeScript + Vite + Tailwind CSS 4
-- **Backend proxy**: Node.js + Express (sirve la PWA y hace de puente con SLiMS)
-- **Backend real**: SLiMS 9 (PHP + MariaDB) con API REST personalizada
+- **Backend proxy (Node.js)**: Express + Axios (sirve la PWA y hace de puente con SLiMS)
+- **Backend proxy (PHP)**: api-proxy.php + cURL (alternativa para servidores web tradicionales)
+- **Backend real**: SLiMS 9 (PHP + MariaDB) con API REST
 - **Escáner**: html5-qrcode (lectura de códigos de barras desde la cámara)
 
 ## Desarrollo local
@@ -37,72 +39,55 @@ Todo queda registrado en la base de datos de SLiMS, permitiendo saber en todo mo
 # Instalar dependencias
 npm install
 
+# Configurar variables de entorno
+cp .env.example .env
+# Edita .env con la URL de tu SLiMS local
+
 # Iniciar servidor de desarrollo
 npm run dev
 ```
 
-El servidor se lanza en `http://localhost:3000` y hace de proxy hacia la API de SLiMS.
+El servidor se lanza en `http://localhost:3000` y hace de proxy hacia la API de SLiMS. El frontend detecta automáticamente que está en modo Node.js y usa `/api/*` como endpoint.
 
-## Despliegue en producción (NAS Synology)
+## Despliegue en producción
 
+Consulta la guía completa en:
+
+- [`MANUAL_USUARIA.md`](MANUAL_USUARIA.md) — Cómo usan la app las socias
+- [`DEPLOYMENT_GUIDE.md`](DEPLOYMENT_GUIDE.md) — Despliegue técnico detallado (Node.js o PHP)
+
+### Resumen rápido
+
+**Opción A — Node.js:**
 ```bash
-# Compilar la PWA
+npm install
+cp .env.example .env   # Configurar SLIMS_API_BASE
 npm run build
-
-# El contenido de dist/ se copia al NAS junto con server.ts compilado
-# Se necesita Node.js en el NAS para ejecutar el servidor Express
+npm start
 ```
 
-Para instrucciones detalladas de instalación, consulta:
-- [`MANUAL_USUARIA.md`](MANUAL_USUARIA.md) — Cómo usan la app las socias
-- [`DEPLOYMENT_GUIDE.md`](DEPLOYMENT_GUIDE.md) — Despliegue técnico en NAS Synology
-- [`MANUAL_INSTALL_SYNOLOGY.md`](../SLiMS/MANUAL_INSTALL_SYNOLOGY.md) — Instalación completa del backend SLiMS
+**Opción B — PHP (NAS Synology con Web Station):**
+```bash
+npm install
+cp api-config.example.php api-config.php   # Configurar SLIMS_API_BASE
+npm run build
+# Copiar dist/ y api-proxy.php al servidor web del NAS
+```
 
-## 🔒 Configuración de HTTPS (obligatorio para PWA)
+## 🔒 HTTPS (obligatorio para PWA)
 
-La PWA necesita HTTPS para que los **Service Workers** funcionen y la app se pueda instalar en el móvil.
-Si accedes por HTTP, el código redirige automáticamente a HTTPS, pero es necesario tenerlo configurado en el NAS.
+La PWA necesita HTTPS para que los Service Workers funcionen y la app se pueda instalar. Debes configurar un certificado SSL (gratuito con Let's Encrypt desde Synology) y un proxy inverso o forzar HTTPS desde Web Station. Consulta [`DEPLOYMENT_GUIDE.md`](DEPLOYMENT_GUIDE.md) para instrucciones paso a paso.
 
-### Configuración en Synology DSM (Web Station)
+## Archivos de configuración sensibles
 
-Si usas **Web Station** para servir la PWA (apuntando a la carpeta `dist/`):
+Estos archivos **nunca** se suben al repositorio (están en `.gitignore`):
 
-1. **Forzar HTTPS en Web Station:**
-   - Ve a **Panel de Control → Portal de Inicio de Sesión → Avanzado**
-   - En la pestaña **Cabeceras de respuesta HTTP**, añade:
-     - `Strict-Transport-Security`: `max-age=31536000; includeSubDomains; preload`
-   - Activa **"Redirigir HTTP a HTTPS"** si está disponible
+- `.env` — Variables de entorno del servidor Node.js (URLs, claves)
+- `api-config.php` — Configuración del proxy PHP (claves, URLs)
 
-2. **Configurar el portal web:**
-   - Ve a **Web Station → Servicio de portal web**
-   - Selecciona el portal que sirve la PWA
-   - Marca **"Forzar conexión HTTPS"** (si aparece)
-   - Asegúrate de que el certificado SSL esté asignado
-
-3. **Certificado SSL (Let's Encrypt):**
-   - Ve a **Panel de Control → Seguridad → Certificado**
-   - Añade un certificado de **Let's Encrypt** para tu dominio (`pelotxo.synology.me`)
-   - Asígnale el certificado al servicio web
-
-### Configuración alternativa: Proxy Inverso
-
-Si prefieres usar el **Proxy Inverso** de Synology en lugar de Web Station:
-
-1. Ve a **Panel de Control → Portal de Inicio de Sesión → Avanzado → Proxy Inverso**
-2. Crea una regla:
-   - **Origen**: Protocolo `HTTPS`, puerto `443`, nombre de host `pelotxo.synology.me`, ruta `/barrioteca`
-   - **Destino**: Protocolo `HTTP`, puerto `3000`, `localhost`
-3. Crea una segunda regla para redirigir HTTP:
-   - **Origen**: Protocolo `HTTP`, puerto `80`, nombre de host `pelotxo.synology.me`, ruta `/barrioteca`
-   - **Destino**: `https://pelotxo.synology.me/barrioteca` (redirección 301)
-
-### Verificación
-
-Después de configurar, comprueba que:
-1. `https://pelotxo.synology.me/barrioteca` funciona correctamente
-2. `http://pelotxo.synology.me/barrioteca` redirige automáticamente a HTTPS
-3. Abre las **DevTools del navegador → Application → Service Workers** y confirma que está registrado y activo
-4. El botón **"Instalar"** o **"Añadir a pantalla de inicio"** debería aparecer en la barra de direcciones
+Usa los archivos `.example` como plantilla:
+- `.env.example` → copiar a `.env`
+- `api-config.example.php` → copiar a `api-config.php`
 
 ## Licencia
 

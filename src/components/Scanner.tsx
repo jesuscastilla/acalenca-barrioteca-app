@@ -3,11 +3,12 @@ import { Html5Qrcode } from 'html5-qrcode';
 import { Camera, RefreshCw, Radio, X } from 'lucide-react';
 
 interface ScannerProps {
-  onScanSuccess: (isbn: string) => void;
+  onResult: (isbn: string) => void;
+  active: boolean;
 }
 
-export const Scanner: React.FC<ScannerProps> = ({ onScanSuccess }) => {
-  const [cameras, setCameras] = useState<MediaDeviceInfo[]>([]);
+export const Scanner: React.FC<ScannerProps> = ({ onResult, active }) => {
+  const [cameras, setCameras] = useState<any[]>([]);
   const [selectedCameraId, setSelectedCameraId] = useState<string>('');
   const [isScanning, setIsScanning] = useState(false);
   const [scannerError, setScannerError] = useState<string | null>(null);
@@ -86,7 +87,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onScanSuccess }) => {
         (decodedText) => {
           // Éxito al escanear
           setSuccess(decodedText);
-          onScanSuccess(decodedText);
+          onResult(decodedText);
           
           // Vibración táctil si el dispositivo lo soporta
           if (navigator.vibrate) {
@@ -144,7 +145,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onScanSuccess }) => {
       await html5QrCode.clear();
 
       setSuccess(decodedText);
-      onScanSuccess(decodedText);
+      onResult(decodedText);
 
       if (navigator.vibrate) {
         try { navigator.vibrate(120); } catch(e) {}
