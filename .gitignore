@@ -20,8 +20,11 @@ importar-isbns.conf
 *.csv
 mis-isbns.csv
 
-# Script de pruebas (contiene credenciales y rutas del NAS)
+# Scripts de prueba (contienen credenciales y rutas del NAS)
 test-slims.php
+test-proxy.php
+test-proxy2.php
+test-input.php
 
 # Dependencias
 package-lock.json
