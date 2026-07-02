@@ -443,6 +443,16 @@ export default function App() {
     }
   };
 
+  const handleCatalogBorrow = (itemCode: string) => {
+    // Si no hay socia activa, no debería llegar aquí (el botón está oculto)
+    if (!activeUser) return;
+    // Redirigir a la vista de escáner e iniciar préstamo con ese código
+    setSelectedAction('prestamo');
+    setPrestamoMemberId(activeUser.barcode || activeUser.id);
+    executeRestAction(itemCode, 'prestamo');
+    setView('scan');
+  };
+
   const clearLogs = () => {
     if (window.confirm("¿Seguro que deseas borrar el historial?")) {
       setLogs([]);
@@ -714,7 +724,14 @@ export default function App() {
           </div>
         )}
 
-        {view === 'search' && <CatalogList onBack={() => setView('dashboard')} endpoint={endpoint} />}
+        {view === 'search' && (
+          <CatalogList 
+            onBack={() => setView('dashboard')} 
+            endpoint={endpoint} 
+            isLoggedIn={!!activeUser}
+            onBorrow={handleCatalogBorrow}
+          />
+        )}
 
         {view === 'scan' && (
           <div className="space-y-6">

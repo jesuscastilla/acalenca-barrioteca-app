@@ -290,7 +290,9 @@ elseif ($path == '/catalog-list') {
                 'author' => ($item['author'] ?? '') ?: "Autora Desconocida",
                 'isbn' => $item['isbn_issn'] ?? '',
                 'status' => ($item['is_available'] ?? false) ? "disponible" : "prestada",
-                'image' => $item['image'] ?? ''
+                'image' => $item['image'] ?? '',
+                'notes' => $item['notes'] ?? '',
+                'item_code' => $item['item_code'] ?? '',
             ];
         }, $data);
         echo json_encode($results);
