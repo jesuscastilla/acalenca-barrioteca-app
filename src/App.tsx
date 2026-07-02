@@ -47,28 +47,17 @@ interface TransactionLog {
 }
 
 /**
- * Detecta automáticamente qué backend usar.
- * - Si estamos corriendo con el servidor Node.js (dev o producción con Vite/Express), usa /api
- * - Si estamos en un servidor PHP (Apache/Nginx con api-proxy.php), usa ./api-proxy.php
+ * Obtiene el endpoint de la API según la variable de entorno de Vite.
+ * - Si se define VITE_API_ENDPOINT en .env o en el build, usa ese valor.
+ * - En producción (NAS Synology + Nginx), usa ./api-proxy.php por defecto.
+ * - En desarrollo con Node.js, VITE_API_ENDPOINT se define como /api.
  */
-function detectEndpoint(): string {
-  // En desarrollo, Vite corre en 5173 y el servidor Express en 3000.
-  // Si la página se sirvió desde localhost con puerto 3000 o similar, es Node.js.
-  // Si no, asumimos que estamos en producción PHP (api-proxy.php).
-  const host = window.location.host;
-  const port = window.location.port;
-  
-  // Si estamos en localhost con puerto 3000 (servidor Express de server.ts)
-  if (host.startsWith('localhost') || host.startsWith('127.0.0.1')) {
-    if (port === '3000' || port === '') {
-      // Servidor Node.js (server.ts sirve Vite en dev y estáticos en prod)
-      return '/api';
-    }
+function getEndpoint(): string {
+  // @ts-ignore — VITE_API_ENDPOINT se inyecta en tiempo de compilación
+  if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_ENDPOINT) {
+    return import.meta.env.VITE_API_ENDPOINT;
   }
-  
-  // Producción con Node.js: el build se sirve desde Express (que también expone /api)
-  // Si no hay PHP disponible, usamos /api como fallback
-  // Pero en producción real con Synology, usaremos api-proxy.php
+  // Valor por defecto para producción en NAS con Nginx
   return './api-proxy.php';
 }
 
@@ -81,7 +70,7 @@ export default function App() {
   const [settingsSubView, setSettingsSubView] = useState<'help'>('help');
   // Ruta base para llamadas a la API.
   // Detección automática: /api para Node.js, ./api-proxy.php para PHP
-  const [endpoint] = useState<string>(() => detectEndpoint());
+  const [endpoint] = useState<string>(() => getEndpoint());
   const [selectedAction, setSelectedAction] = useState<ActionType>('prestamo');
   const [manualCode, setManualCode] = useState('');
   const [loading, setLoading] = useState(false);
@@ -378,7 +367,7 @@ export default function App() {
         payload.member_id = prestamoMemberId || activeUser?.barcode || sessionStorage.getItem('id_socia') || "";
       }
 
-      const response = await fetch(buildUrl('perform-action'), {
+      const response = await fetch(buildUrl('perform-action', payload), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -725,7 +714,7 @@ export default function App() {
           </div>
         )}
 
-        {view === 'search' && <CatalogSearch onBack={() => setView('dashboard')} />}
+        {view === 'search' && <CatalogSearch onBack={() => setView('dashboard')} endpoint={endpoint} />}
 
         {view === 'scan' && (
           <div className="space-y-6">
@@ -755,7 +744,6 @@ export default function App() {
             <div className="bg-white p-4 rounded-[2rem] border border-gray-200 shadow-xl overflow-hidden relative">
               <Scanner 
                 onResult={handleScanSuccess} 
-                active={view === 'scan'} 
               />
               
               <AnimatePresence>

@@ -68,25 +68,40 @@ El archivo `api-proxy.php` actúa como proxy hacia SLiMS. La PWA se sirve como a
 
 **Requisitos:** Apache o Nginx con PHP 7.4+ y cURL habilitado.
 
+**⚠️ IMPORTANTE — `api-proxy.php` DEBE estar en la RAÍZ de la PWA:**
+```
+/barrioteca/
+├── api-proxy.php        ← AQUÍ, en la raíz de la PWA
+├── api-config.php        ← Junto a api-proxy.php
+├── index.html            ← Build de la PWA
+├── assets/               ← JS y CSS compilados
+└── ...
+```
+
 ```bash
 # 1. Subir la carpeta del proyecto al NAS
 #    Ejemplo: /var/services/web/barrioteca/
 
-# 2. Configurar api-config.php
+# 2. ⚠️ COPIAR api-proxy.php a la RAÍZ de la PWA si no está ya allí
+#    Asegúrate de que api-proxy.php está en /barrioteca/api-proxy.php
+#    (el frontend llama a ./api-proxy.php, que se resuelve contra esta ruta)
+
+# 3. Configurar api-config.php
 cp api-config.example.php api-config.php
 # Edita api-config.php con tus valores:
 #   define('GOOGLE_BOOKS_API_KEY', 'tu-clave');
 #   define('SLIMS_API_BASE', 'http://localhost/slims/api/index.php');
 
-# 3. Configurar .htaccess (si usas Apache)
-#    Copia el contenido de htaccess.root en la raíz del servidor web
-#    o configura Nginx para enrutar /api/* a api-proxy.php
+# 4. Configurar Nginx (Web Station en Synology ya lo gestiona)
+#    No se necesita regla de reescritura porque el frontend llama
+#    directamente a ./api-proxy.php?action=... con rutas relativas.
 
-# 4. Construir la PWA
+# 5. Construir la PWA
 npm install
 npm run build
 
-# 5. Copiar la carpeta dist/ al NAS o configurar el DocumentRoot
+# 6. Copiar el contenido de dist/ a /barrioteca/ en el NAS
+#    El directorio final debe contener tanto index.html como api-proxy.php
 ```
 
 ---

@@ -14,9 +14,10 @@ interface CatalogBook {
 
 interface CatalogSearchProps {
   onBack: () => void;
+  endpoint: string;
 }
 
-export const CatalogSearch: React.FC<CatalogSearchProps> = ({ onBack }) => {
+export const CatalogSearch: React.FC<CatalogSearchProps> = ({ onBack, endpoint }) => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<CatalogBook[]>([]);
   const [loading, setLoading] = useState(false);
@@ -37,8 +38,8 @@ export const CatalogSearch: React.FC<CatalogSearchProps> = ({ onBack }) => {
   const searchCatalog = async () => {
     setLoading(true);
     try {
-      // Llamada al proxy PHP con ruta relativa (funciona con Nginx sin reescritura)
-      const response = await axios.get(`./api-proxy.php?action=catalog-proxy&q=${encodeURIComponent(query)}`);
+      // Usar el endpoint configurado (api-proxy.php en NAS/Nginx, /api en dev Node.js)
+      const response = await axios.get(`${endpoint}?action=catalog-proxy&q=${encodeURIComponent(query)}`);
       setResults(response.data);
     } catch (error) {
       console.error("Error al buscar en el catálogo:", error);

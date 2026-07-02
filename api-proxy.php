@@ -76,23 +76,48 @@ function slimRequest($url, $method = 'GET', $body = null) {
     return [$http_code, $response];
 }
 
-// ─── Obtener la acción a ejecutar ────────────────────
-$method = $_SERVER['REQUEST_METHOD'];
-$path = isset($_GET['action']) ? '/' . $_GET['action'] : '';
+// ─── Obtener la acción a ejecutar (ROBUSTO — compatible con Nginx Synology) ────
+$qs = $_SERVER['QUERY_STRING'] ?? '';
 
-// Fallback: extraer de la URL (para Apache con PATH_INFO)
-if (empty($path)) {
-    $request_uri = $_SERVER['REQUEST_URI'];
-    $base_path = dirname($_SERVER['PHP_SELF']);
-    $path = str_replace($base_path . '/api-proxy.php', '', $request_uri);
-    $path = explode('?', $path)[0];
+// Si no hay QUERY_STRING, intentar REQUEST_URI
+if (empty($qs) && !empty($_SERVER['REQUEST_URI'])) {
+    $parts = explode('?', $_SERVER['REQUEST_URI'], 2);
+    $qs = $parts[1] ?? '';
 }
 
-// Si la ruta empieza con /api, quitarlo (compatibilidad con frontend antiguo)
-$path = preg_replace('#^/api#', '', $path);
+// Parsear parámetros manualmente
+$params = [];
+parse_str($qs, $params);
+$action = $params['action'] ?? '';
 
-// Leer datos de entrada (JSON o POST tradicional)
-$input_data = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+// Mantener $_GET sincronizado (por si acaso)
+if (empty($_GET) && !empty($params)) {
+    $_GET = $params;
+}
+
+$path = '/' . $action;
+
+// Leer datos de entrada — combinar body JSON + $_GET + $_POST para máxima compatibilidad
+$input_data = [];
+
+// Leer body JSON (funciona en la mayoría de casos)
+$rawInput = @file_get_contents('php://input');
+if (!empty($rawInput)) {
+    $decoded = @json_decode($rawInput, true);
+    if (is_array($decoded)) {
+        $input_data = array_merge($input_data, $decoded);
+    }
+}
+
+// Fusionar $_GET (para compatibilidad con Nginx que a veces no pasa el body)
+if (!empty($_GET)) {
+    $input_data = array_merge($input_data, $_GET);
+}
+
+// Fusionar $_POST
+if (!empty($_POST)) {
+    $input_data = array_merge($input_data, $_POST);
+}
 
 // ─── Mapeo de rutas de la PWA a la API interna de SLiMS ────
 

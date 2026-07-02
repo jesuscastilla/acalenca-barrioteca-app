@@ -4,10 +4,9 @@ import { Camera, RefreshCw, Radio, X } from 'lucide-react';
 
 interface ScannerProps {
   onResult: (isbn: string) => void;
-  active: boolean;
 }
 
-export const Scanner: React.FC<ScannerProps> = ({ onResult, active }) => {
+export const Scanner: React.FC<ScannerProps> = ({ onResult }) => {
   const [cameras, setCameras] = useState<any[]>([]);
   const [selectedCameraId, setSelectedCameraId] = useState<string>('');
   const [isScanning, setIsScanning] = useState(false);
