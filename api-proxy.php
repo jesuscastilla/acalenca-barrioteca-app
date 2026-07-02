@@ -276,6 +276,30 @@ elseif ($path == '/catalog-proxy') {
     exit;
 }
 
+elseif ($path == '/catalog-list') {
+    // Listar toda la bibliografía (sin filtro). El comodín _ fuerza a SLiMS a devolver todos los títulos.
+    $target_url = SLIMS_API_BASE . "?_api_path=/biblio/search&q=_";
+    list($http_code, $response) = slimRequest($target_url, 'GET');
+
+    $data = json_decode($response, true);
+    if (is_array($data)) {
+        $results = array_map(function($item) {
+            return [
+                'id' => $item['biblio_id'] ?? '',
+                'title' => $item['title'] ?? '',
+                'author' => ($item['author'] ?? '') ?: "Autora Desconocida",
+                'isbn' => $item['isbn_issn'] ?? '',
+                'status' => ($item['is_available'] ?? false) ? "disponible" : "prestada",
+                'image' => $item['image'] ?? ''
+            ];
+        }, $data);
+        echo json_encode($results);
+    } else {
+        echo json_encode([]);
+    }
+    exit;
+}
+
 elseif ($path == '/book-metadata') {
     $isbn = $_GET['isbn'] ?? '';
     if (empty($isbn)) {

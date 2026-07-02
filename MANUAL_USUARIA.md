@@ -60,10 +60,10 @@ Una vez instalada, podrás abrir Barrioteca directamente desde el icono en tu pa
 
 ## 4. Consultar el Catálogo
 
-Si quieres saber si un libro existe antes de ir a buscarlo:
-1.  Ve a la sección **Buscar** o **Catálogo** (icono de lupa en la barra inferior).
-2.  Escribe el título, autora o ISBN.
-3.  El sistema te mostrará los resultados y si el ejemplar está actualmente prestado o disponible.
+Para ver todos los libros disponibles en la barrioteca:
+1.  Ve a la sección **Catálogo** (icono de lupa en la barra inferior).
+2.  El sistema cargará automáticamente la lista completa de libros.
+3.  Cada libro muestra su título, autora, ISBN y si está disponible o prestado.
 
 ---
 

@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Scanner } from './components/Scanner';
-import { CatalogSearch } from './components/CatalogSearch';
+import { CatalogList } from './components/CatalogList';
 
 type View = 'dashboard' | 'search' | 'scan' | 'settings';
 type ActionType = 'prestamo' | 'devolucion';
@@ -714,7 +714,7 @@ export default function App() {
           </div>
         )}
 
-        {view === 'search' && <CatalogSearch onBack={() => setView('dashboard')} endpoint={endpoint} />}
+        {view === 'search' && <CatalogList onBack={() => setView('dashboard')} endpoint={endpoint} />}
 
         {view === 'scan' && (
           <div className="space-y-6">
