@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Book, User, Hash, Loader2, ShoppingCart, ChevronDown, ChevronUp } from 'lucide-react';
+import { Book, User, Hash, Loader2, ShoppingCart, ChevronDown, ChevronUp, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import axios from 'axios';
 
@@ -25,6 +25,7 @@ export const CatalogList: React.FC<CatalogListProps> = ({ onBack, endpoint, isLo
   const [results, setResults] = useState<CatalogBook[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({});
+  const [selectedBook, setSelectedBook] = useState<CatalogBook | null>(null);
 
   useEffect(() => {
     loadCatalog();
@@ -36,19 +37,24 @@ export const CatalogList: React.FC<CatalogListProps> = ({ onBack, endpoint, isLo
       const response = await axios.get(`${endpoint}?action=catalog-list`);
       setResults(response.data || []);
     } catch (error) {
-      console.error("Error al cargar el catálogo:", error);
+      console.error("Error al cargar el catalogo:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const toggleNotes = (id: string) => {
+  const toggleNotes = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     setExpandedNotes(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const openDetail = (book: CatalogBook) => {
+    setSelectedBook(book);
   };
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-serif italic mb-6 border-b border-gray-200 pb-2">Catálogo de la Biblioteca</h2>
+      <h2 className="text-2xl font-serif italic mb-6 border-b border-gray-200 pb-2">Catalogo de la Biblioteca</h2>
 
       <div className="space-y-4">
         {loading ? (
@@ -62,9 +68,9 @@ export const CatalogList: React.FC<CatalogListProps> = ({ onBack, endpoint, isLo
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.03 }}
-              className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex gap-4 relative overflow-hidden"
+              onClick={() => openDetail(book)}
+              className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex gap-4 relative overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
             >
-              {/* Portada */}
               {book.image && (
                 <div className="w-20 h-28 shrink-0 bg-gray-100 rounded-lg overflow-hidden border border-gray-200 shadow-sm">
                   <img src={book.image} alt={book.title} className="w-full h-full object-cover" />
@@ -72,7 +78,6 @@ export const CatalogList: React.FC<CatalogListProps> = ({ onBack, endpoint, isLo
               )}
 
               <div className="flex-1 flex flex-col gap-2 min-w-0">
-                {/* Título y estado */}
                 <div className="flex justify-between items-start gap-2">
                   <h3 className="font-bold text-base leading-tight">{book.title}</h3>
                   <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-1 rounded-lg shrink-0 ${
@@ -82,7 +87,6 @@ export const CatalogList: React.FC<CatalogListProps> = ({ onBack, endpoint, isLo
                   </span>
                 </div>
 
-                {/* Autora e ISBN / código de ejemplar */}
                 <div className="flex flex-col gap-0.5 text-xs text-gray-500">
                   <div className="flex items-center gap-1.5">
                     <User size={12} />
@@ -101,11 +105,10 @@ export const CatalogList: React.FC<CatalogListProps> = ({ onBack, endpoint, isLo
                   )}
                 </div>
 
-                {/* Sinopsis */}
                 {book.notes && (
                   <div className="mt-1">
-                    <button 
-                      onClick={() => toggleNotes(book.id)}
+                    <button
+                      onClick={(e) => toggleNotes(book.id, e)}
                       className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-amber-700 hover:text-amber-900 transition-colors"
                     >
                       {expandedNotes[book.id] ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
@@ -127,11 +130,10 @@ export const CatalogList: React.FC<CatalogListProps> = ({ onBack, endpoint, isLo
                 )}
               </div>
 
-              {/* Botón de préstamo (usa item_code, que siempre existe) */}
               {book.status === 'disponible' && isLoggedIn && (book.item_code || book.isbn) && (
                 <div className="absolute bottom-4 right-4">
                   <button
-                    onClick={() => onBorrow(book.item_code || book.isbn)}
+                    onClick={(e) => { e.stopPropagation(); onBorrow(book.item_code || book.isbn); }}
                     className="flex items-center gap-1.5 bg-ink text-bg text-[10px] font-bold uppercase tracking-widest px-3 py-2 rounded-xl hover:bg-black transition-all active:scale-95"
                   >
                     <ShoppingCart size={12} />
@@ -148,10 +150,93 @@ export const CatalogList: React.FC<CatalogListProps> = ({ onBack, endpoint, isLo
         ) : (
           <div className="text-center py-10 opacity-30">
             <Book size={48} className="mx-auto mb-3" />
-            <p className="font-serif italic text-sm">El catálogo está vacío.</p>
+            <p className="font-serif italic text-sm">El catalogo esta vacio.</p>
           </div>
         )}
       </div>
+
+      {/* Modal de detalle */}
+      <AnimatePresence>
+        {selectedBook && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSelectedBook(null)}
+          >
+            <motion.div
+              className="relative bg-white rounded-3xl max-w-lg w-full max-h-[85vh] overflow-y-auto shadow-2xl"
+              initial={{ scale: 0.92, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.92, y: 20 }}
+              transition={{ type: 'spring', stiffness: 320, damping: 28 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setSelectedBook(null)}
+                className="absolute top-4 right-4 p-2 bg-black/10 hover:bg-black/20 rounded-full transition-colors z-10"
+                aria-label="Cerrar"
+              >
+                <X size={18} />
+              </button>
+
+              {selectedBook.image && (
+                <div className="w-full h-56 bg-gray-100 flex items-center justify-center overflow-hidden rounded-t-3xl">
+                  <img src={selectedBook.image} alt={selectedBook.title} className="w-full h-full object-cover" />
+                </div>
+              )}
+
+              <div className="p-6 space-y-4">
+                <div>
+                  <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-1 rounded-lg ${
+                    selectedBook.status === 'disponible' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+                  }`}>
+                    {selectedBook.status === 'disponible' ? 'Disponible' : 'Prestada'}
+                  </span>
+                </div>
+
+                <h2 className="text-xl font-bold leading-tight">{selectedBook.title}</h2>
+
+                <div className="flex flex-col gap-1 text-sm text-gray-500">
+                  <div className="flex items-center gap-1.5">
+                    <User size={14} />
+                    <span>{selectedBook.author}</span>
+                  </div>
+                  {selectedBook.isbn ? (
+                    <div className="flex items-center gap-1.5 font-mono text-[11px]">
+                      <Hash size={12} />
+                      <span>ISBN: {selectedBook.isbn}</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1.5 font-mono text-[11px] opacity-60">
+                      <Hash size={12} />
+                      <span>Ejemplar: {selectedBook.item_code || selectedBook.id}</span>
+                    </div>
+                  )}
+                </div>
+
+                {selectedBook.notes && (
+                  <div>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Sinopsis</h3>
+                    <p className="text-sm text-gray-600 leading-relaxed">{selectedBook.notes}</p>
+                  </div>
+                )}
+
+                {selectedBook.status === 'disponible' && isLoggedIn && (selectedBook.item_code || selectedBook.isbn) && (
+                  <button
+                    onClick={() => { onBorrow(selectedBook.item_code || selectedBook.isbn); setSelectedBook(null); }}
+                    className="w-full flex items-center justify-center gap-2 bg-ink text-bg text-sm font-bold uppercase tracking-widest py-3 rounded-xl hover:bg-black transition-all active:scale-95"
+                  >
+                    <ShoppingCart size={16} />
+                    Pedir este libro
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
