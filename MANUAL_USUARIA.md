@@ -90,7 +90,3 @@ Para ver todos los libros disponibles en la barrioteca:
 - Si el problema persiste, limpia la caché del navegador.
 
 ---
-
-> **Nota sobre Privacidad**: Todos los datos se almacenan en tu servidor NAS. La aplicación no comparte información con terceros, salvo la consulta básica a Google Books para mostrar la portada y el título del libro durante el escaneo.
-
-> **Consejo**: Si gestionas varios préstamos seguidos, mantén pulsado el botón **Enviar** tras escribir el código manual para agilizar el proceso.
