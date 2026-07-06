@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Book, User, Hash, Loader2, ShoppingCart, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { Book, User, Hash, Loader2, ShoppingCart, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import axios from 'axios';
 
@@ -24,7 +24,6 @@ interface CatalogListProps {
 export const CatalogList: React.FC<CatalogListProps> = ({ onBack, endpoint, isLoggedIn, onBorrow }) => {
   const [results, setResults] = useState<CatalogBook[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({});
   const [selectedBook, setSelectedBook] = useState<CatalogBook | null>(null);
 
   useEffect(() => {
@@ -43,15 +42,6 @@ export const CatalogList: React.FC<CatalogListProps> = ({ onBack, endpoint, isLo
     }
   };
 
-  const toggleNotes = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setExpandedNotes(prev => ({ ...prev, [id]: !prev[id] }));
-  };
-
-  const openDetail = (book: CatalogBook) => {
-    setSelectedBook(book);
-  };
-
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-serif italic mb-6 border-b border-gray-200 pb-2">Catalogo de la Biblioteca</h2>
@@ -68,7 +58,7 @@ export const CatalogList: React.FC<CatalogListProps> = ({ onBack, endpoint, isLo
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.03 }}
-              onClick={() => openDetail(book)}
+              onClick={() => setSelectedBook(book)}
               className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex gap-4 relative overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
             >
               {book.image && (
@@ -106,27 +96,9 @@ export const CatalogList: React.FC<CatalogListProps> = ({ onBack, endpoint, isLo
                 </div>
 
                 {book.notes && (
-                  <div className="mt-1">
-                    <button
-                      onClick={(e) => toggleNotes(book.id, e)}
-                      className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-amber-700 hover:text-amber-900 transition-colors"
-                    >
-                      {expandedNotes[book.id] ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                      Sinopsis
-                    </button>
-                    <AnimatePresence>
-                      {expandedNotes[book.id] && (
-                        <motion.p
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          exit={{ opacity: 0, height: 0 }}
-                          className="text-[11px] text-gray-500 leading-relaxed mt-1.5 overflow-hidden"
-                        >
-                          {book.notes.length > 300 ? book.notes.substring(0, 300) + '...' : book.notes}
-                        </motion.p>
-                      )}
-                    </AnimatePresence>
-                  </div>
+                  <p className="text-[11px] text-gray-400 leading-relaxed mt-1 line-clamp-2 italic">
+                    {book.notes.substring(0, 120)}{book.notes.length > 120 ? '...' : ''}
+                  </p>
                 )}
               </div>
 
@@ -216,12 +188,14 @@ export const CatalogList: React.FC<CatalogListProps> = ({ onBack, endpoint, isLo
                   )}
                 </div>
 
-                {selectedBook.notes && (
-                  <div>
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Sinopsis</h3>
+                <div>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Sinopsis</h3>
+                  {selectedBook.notes ? (
                     <p className="text-sm text-gray-600 leading-relaxed">{selectedBook.notes}</p>
-                  </div>
-                )}
+                  ) : (
+                    <p className="text-sm text-gray-400 italic">Sinopsis no disponible para este libro.</p>
+                  )}
+                </div>
 
                 {selectedBook.status === 'disponible' && isLoggedIn && (selectedBook.item_code || selectedBook.isbn) && (
                   <button
