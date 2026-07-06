@@ -59,7 +59,7 @@ function slimRequest($url, $method = 'GET', $body = null) {
     curl_setopt($ch, CURLOPT_HTTPHEADER, [
         'Content-Type: application/json',
         'Accept: application/json',
-        'User-Agent: Barrioteca-PWA/1.0'
+        'User-Agent: Mozilla/5.0'
     ]);
 
     if ($method === 'POST') {
