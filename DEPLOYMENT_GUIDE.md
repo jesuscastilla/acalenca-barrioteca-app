@@ -1,4 +1,4 @@
-# 🚀 Guía de Despliegue — Barrioteca Acalencá
+#  Guía de Despliegue — Barrioteca Acalencá
 
 Esta guía explica cómo desplegar las dos aplicaciones que componen el sistema:
 1. **La PWA** (frontend React + backend proxy)
@@ -6,10 +6,10 @@ Esta guía explica cómo desplegar las dos aplicaciones que componen el sistema:
 
 ---
 
-## 📐 Arquitectura
+##  Arquitectura
 
 ```
-📱 Navegador móvil (PWA instalada o web)
+ Navegador móvil (PWA instalada o web)
          │
          ▼
 ┌─────────────────────────────────────┐
@@ -33,11 +33,11 @@ Esta guía explica cómo desplegar las dos aplicaciones que componen el sistema:
 
 ---
 
-## 🔧 Opciones de Despliegue
+##  Opciones de Despliegue
 
 ### Opción A: Node.js (recomendado para desarrollo y producción ligera)
 
-El servidor `server.ts` usa Express.js y actúa como proxy hacia SLiMS **y** sirve los archivos estáticos de la PWA.
+El servidor `server.ts` usa Express.js y actúa como proxy hacia SLiMS y sirve los archivos estáticos de la PWA.
 
 **Requisitos:** Node.js 18+ en el NAS Synology.
 
@@ -82,7 +82,7 @@ El archivo `api-proxy.php` actúa como proxy hacia SLiMS. La PWA se sirve como a
 # 1. Subir la carpeta del proyecto al NAS
 #    Ejemplo: /var/services/web/barrioteca/
 
-# 2. ⚠️ COPIAR api-proxy.php a la RAÍZ de la PWA si no está ya allí
+# 2. COPIAR api-proxy.php a la RAÍZ de la PWA si no está ya allí
 #    Asegúrate de que api-proxy.php está en /barrioteca/api-proxy.php
 #    (el frontend llama a ./api-proxy.php, que se resuelve contra esta ruta)
 
@@ -106,7 +106,7 @@ npm run build
 
 ---
 
-## ⚙️ Variables de Entorno y Configuración
+## Variables de Entorno y Configuración
 
 ### Para Node.js (server.ts)
 
@@ -130,7 +130,7 @@ Copia `api-config.example.php` → `api-config.php` y configura:
 
 ---
 
-## 🔒 Configuración de HTTPS
+##  Configuración de HTTPS
 
 La PWA requiere HTTPS para funcionar correctamente (service workers, instalación, etc.).
 
@@ -142,7 +142,7 @@ La PWA requiere HTTPS para funcionar correctamente (service workers, instalació
 
 ---
 
-## 📁 Estructura de Archivos
+##  Estructura de Archivos
 
 ```
 barrioteca/
@@ -166,7 +166,7 @@ barrioteca/
 
 ---
 
-## 🧪 Verificación del Despliegue
+##  Verificación del Despliegue
 
 1. **Probar la API**: Accede a `https://TU-DOMINIO/barrioteca/diagnostico.php` para verificar la conexión con SLiMS.
 2. **Probar la PWA**: Abre la app en un móvil y verifica que:
@@ -178,7 +178,7 @@ barrioteca/
 
 ---
 
-## 🔄 Actualización de la PWA
+##  Actualización de la PWA
 
 Para actualizar la PWA a una nueva versión:
 
