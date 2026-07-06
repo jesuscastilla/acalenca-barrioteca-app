@@ -26,5 +26,8 @@ test-proxy.php
 test-proxy2.php
 test-input.php
 
+# Script de importación CSV (acceso directo a BD de SLiMS)
+importar-csv.php
+
 # Dependencias
 package-lock.json
