@@ -302,6 +302,23 @@ elseif ($path == '/catalog-list') {
     exit;
 }
 
+elseif ($path == '/member-loans') {
+    $member_id = $input_data['member_id'] ?? $_GET['member_id'] ?? '';
+    if (empty($member_id)) {
+        echo json_encode(['status' => 'error', 'message' => 'El ID de la socia es obligatorio.']);
+        exit;
+    }
+    $target_url = SLIMS_API_BASE . "?_api_path=/member/" . urlencode($member_id) . "/loans";
+    list($http_code, $response) = slimRequest($target_url, 'GET');
+    $data = json_decode($response, true);
+    if (isset($data['data'])) {
+        echo json_encode(['status' => 'success', 'data' => $data['data']]);
+    } else {
+        echo json_encode(['status' => 'success', 'data' => []]);
+    }
+    exit;
+}
+
 elseif ($path == '/book-metadata') {
     $isbn = $_GET['isbn'] ?? '';
     if (empty($isbn)) {

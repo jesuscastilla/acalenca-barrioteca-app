@@ -1,66 +1,47 @@
-const CACHE_NAME = 'barrioteca-cache-v3';
-// Rutas relativas al location del Service Worker
-// Si el SW está en /barrioteca/sw.js, se resuelven contra /barrioteca/
-const ASSETS_TO_CACHE = [
-  './',
-  './index.html',
+const CACHE_NAME = 'barrioteca-v4';
+
+// Solo cachear recursos estaticos que nunca cambian (iconos, manifest)
+const STATIC_ASSETS = [
   './manifest.json',
-  './icon.svg',
-  './logo.png',
   './icon-192x192.png',
-  './icon-512x512.png'
+  './icon-512x512.png',
+  './icon.svg',
+  './logo.png'
 ];
 
-// Instalación: Cachear activos estáticos
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      console.log('Abriendo cache y añadiendo activos');
-      return cache.addAll(ASSETS_TO_CACHE);
-    })
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
   );
   self.skipWaiting();
 });
 
-// Activación: Limpiar caches antiguos
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('Borrando cache antiguo:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
+    caches.keys().then((names) => Promise.all(
+      names.filter(n => n !== CACHE_NAME).map(n => caches.delete(n))
+    ))
   );
   self.clients.claim();
 });
 
-// Estrategia de Fetch: Network First con fallback a Cache
+// Network-first para todo. Si no hay red, servir lo que haya en cache.
 self.addEventListener('fetch', (event) => {
-  // No cachear peticiones a la API ni al proxy PHP
-  if (event.request.url.includes('/api/') || event.request.url.includes('api-proxy.php')) {
+  // No cachear peticiones a la API
+  if (event.request.url.includes('api-proxy.php') || event.request.url.includes('/api/')) {
     return;
   }
 
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // Si la red funciona, clonar la respuesta y guardarla en cache
-        if (response && response.status === 200 && response.type === 'basic') {
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
+        // Guardar en cache solo respuestas validas
+        if (response && response.status === 200) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         }
         return response;
       })
-      .catch(() => {
-        // Si la red falla, intentar servir desde cache
-        return caches.match(event.request);
-      })
+      .catch(() => caches.match(event.request))
   );
 });

@@ -107,6 +107,8 @@ export default function App() {
   
   const [apiResponse, setApiResponse] = useState<{ status: string; message?: string } | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [memberLoans, setMemberLoans] = useState<any[]>([]);
+  const [loansLoading, setLoansLoading] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstallable, setIsInstallable] = useState(false);
   const [showInstallToast, setShowInstallToast] = useState(false);
@@ -329,6 +331,16 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('barrioteca_logs', JSON.stringify(logs));
   }, [logs]);
+
+  // Cargar prestamos activos de la socia
+  useEffect(() => {
+    if (!activeUser) { setMemberLoans([]); return; }
+    setLoansLoading(true);
+    axios.get(buildUrl('member-loans', { member_id: activeUser.barcode || activeUser.id }))
+      .then(res => setMemberLoans(res.data?.data || []))
+      .catch(() => setMemberLoans([]))
+      .finally(() => setLoansLoading(false));
+  }, [activeUser, logs.length]);
 
   /**
    * Ejecutar una operación de préstamo o devolución en el servidor SLiMS
@@ -682,6 +694,31 @@ export default function App() {
                 <span className="font-bold uppercase tracking-widest text-xs">Catálogo</span>
               </button>
             </div>
+
+            {/* Prestamos activos */}
+            {activeUser && (
+              <section className="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm space-y-4">
+                <h3 className="text-sm font-bold uppercase tracking-widest opacity-60 flex items-center gap-2">
+                  <FileText size={14} /> Mis Prestamos
+                </h3>
+                {loansLoading ? (
+                  <div className="flex justify-center py-4"><Loader2 className="animate-spin text-amber-500" size={20} /></div>
+                ) : memberLoans.length === 0 ? (
+                  <p className="text-sm text-gray-400 font-serif italic text-center py-4">No tienes libros en prestamo.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {memberLoans.map((loan: any) => (
+                      <div key={loan.loan_id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                        <div>
+                          <p className="text-xs font-bold">{loan.title}</p>
+                          <p className="text-[10px] text-gray-500">Prestado: {loan.loan_date} · Vence: {loan.due_date}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            )}
 
             <section className="space-y-4">
               <div className="flex items-center justify-between">
