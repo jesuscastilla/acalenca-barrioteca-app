@@ -388,6 +388,10 @@ export default function App() {
       }
       
       if (serverData && serverData.status === 'success') {
+        // Si Google Books no devolvio el titulo, usar el de la respuesta de SLiMS
+        if (!bookTitle && serverData.data?.item_title) {
+          bookTitle = serverData.data.item_title;
+        }
         setApiResponse({
           status: 'success',
           message: serverData.message || `Operación de ${actionType === 'prestamo' ? 'préstamo' : 'devolución'} completada para ${activeUser ? activeUser.nombre : 'socia'}.`
@@ -406,6 +410,10 @@ export default function App() {
         setLogs(prev => [newLog, ...prev]);
         setManualCode('');
       } else {
+        // En caso de error, tambien intentar obtener el titulo desde SLiMS si existe
+        if (!bookTitle && serverData?.data?.item_title) {
+          bookTitle = serverData.data.item_title;
+        }
         const failMessage = serverData?.error || serverData?.message || "Respuesta de servidor fallida";
         setApiError(failMessage);
 
