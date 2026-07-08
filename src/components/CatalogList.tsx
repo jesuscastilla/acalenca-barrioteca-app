@@ -153,12 +153,6 @@ export const CatalogList: React.FC<CatalogListProps> = ({ onBack, endpoint, isLo
                 <X size={18} />
               </button>
 
-              {selectedBook.image && (
-                <div className="w-full h-56 bg-gray-100 flex items-center justify-center overflow-hidden rounded-t-3xl">
-                  <img src={selectedBook.image} alt={selectedBook.title} className="w-full h-full object-cover" />
-                </div>
-              )}
-
               <div className="p-6 space-y-4">
                 <div>
                   <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-1 rounded-lg ${

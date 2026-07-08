@@ -278,7 +278,7 @@ elseif ($path == '/catalog-proxy') {
 
 elseif ($path == '/catalog-list') {
     // Listar toda la bibliografía (sin filtro). El comodín _ fuerza a SLiMS a devolver todos los títulos.
-    $target_url = SLIMS_API_BASE . "?_api_path=/biblio/search&q=_";
+    $target_url = SLIMS_API_BASE . "?_api_path=/biblio/search&q=_&_limit=999";
     list($http_code, $response) = slimRequest($target_url, 'GET');
 
     $data = json_decode($response, true);
