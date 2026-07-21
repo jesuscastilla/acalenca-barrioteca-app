@@ -114,6 +114,18 @@ export default function App() {
   const [showInstallToast, setShowInstallToast] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
 
+  // Limpiar localStorage al iniciar (modo pruebas)
+  useEffect(() => {
+    localStorage.removeItem('barrioteca_users');
+    localStorage.removeItem('barrioteca_active_user_id');
+    localStorage.removeItem('barrioteca_prestamo_member_id');
+    localStorage.removeItem('barrioteca_logs');
+    setActiveUserId('');
+    setPrestamoMemberId('');
+    setLogs([]);
+    setUsers([]);
+  }, []);
+
   // Gestión de instalación PWA
   useEffect(() => {
     // Detectar si ya está instalada como app standalone
