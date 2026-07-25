@@ -89,6 +89,34 @@ Usa los archivos `.example` como plantilla:
 - `.env.example` → copiar a `.env`
 - `api-config.example.php` → copiar a `api-config.php`
 
+## Scripts de importacion de libros
+
+La Barrioteca incluye varios scripts PHP para añadir libros al catalogo sin pasar por el panel de administracion:
+
+| Script | Ubicacion en repo | Funcion |
+|--------|-------------------|---------|
+| `importar-csv.php` | `PWA/importar-csv.php` | Importacion masiva desde archivo CSV con ISBNs, por lotes |
+| `anadir-libro.php` | `SLiMS/anadir-libro.php` | Busqueda por titulo/autor en APIs o formulario manual, para libros sin ISBN |
+| `importar-isbns.php` | `PWA/importar-isbns.php` | Pegar una lista de ISBNs y añadirlos uno a uno |
+
+Los scripts se suben al NAS en `/slims/` (no en `/barrioteca/`) y se eliminan despues de usarlos. El script `anadir-libro.php` genera automaticamente una etiqueta con codigo de barras imprimible para pegar en cada libro fisico.
+
+## Libros sin ISBN en la PWA
+
+Para libros que no tienen ISBN, la PWA soporta tres metodos de prestamo/devolucion:
+
+- **Escanear etiqueta**: La administracion imprime una etiqueta con codigo de barras `LIB-XX` desde `anadir-libro.php` y la pega en el libro. La socia escanea ese codigo.
+- **Entrada manual**: En la vista de escaneo hay un campo "Entrada Manual" donde se puede escribir el codigo `LIB-XX`.
+- **Boton "Pedir" en catalogo**: Al buscar un libro en el catalogo, si esta disponible aparece un boton "Pedir" que ejecuta el prestamo directamente.
+
+## Infraestructura
+
+La Barrioteca Acalenca se aloja en un **NAS Synology** que funciona como nube local encriptada y autogestionada, sin dependencia de servidores externos. El acceso al panel de administracion (DSM) se realiza via `https://pelotxo.synology.me:5001`. La PWA y SLiMS se sirven por HTTPS estandar (puerto 443).
+
+## Creditos
+
+Este proyecto ha sido desarrollado por Peloxi (Instagram: @Pelochochi) para la Barrioteca Acalenca, un espacio perteneciente a Lebeche, asociacion cultural y vecinal de Salobrena (Granada).
+
 ## Licencia
 
 GNU General Public License v3.0
