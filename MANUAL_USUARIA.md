@@ -1,4 +1,4 @@
-# 📚 Manual de Usuaria — Barrioteca Acalencá
+# Manual de Usuaria — Barrioteca Acalenca
 
 Este manual detalla cómo utilizar el sistema de gestión de la **Barrioteca Acalencá**, desde la creación de socias en el panel de administración (SLiMS) hasta el uso cotidiano de la aplicación móvil (PWA) para préstamos y devoluciones.
 

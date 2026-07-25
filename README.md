@@ -74,7 +74,7 @@ npm run build
 # Copiar dist/ y api-proxy.php al servidor web del NAS
 ```
 
-## 🔒 HTTPS (obligatorio para PWA)
+## HTTPS (obligatorio para PWA)
 
 La PWA necesita HTTPS para que los Service Workers funcionen y la app se pueda instalar. Debes configurar un certificado SSL (gratuito con Let's Encrypt desde Synology) y un proxy inverso o forzar HTTPS desde Web Station. Consulta [`DEPLOYMENT_GUIDE.md`](DEPLOYMENT_GUIDE.md) para instrucciones paso a paso.
 

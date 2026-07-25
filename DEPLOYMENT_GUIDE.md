@@ -6,7 +6,7 @@ Esta guía explica cómo desplegar las dos aplicaciones que componen el sistema:
 
 ---
 
-##  Arquitectura
+## Arquitectura
 
 ```
  Navegador móvil (PWA instalada o web)
@@ -33,7 +33,7 @@ Esta guía explica cómo desplegar las dos aplicaciones que componen el sistema:
 
 ---
 
-##  Opciones de Despliegue
+## Opciones de Despliegue
 
 ### Opción A: Node.js (recomendado para desarrollo y producción ligera)
 
@@ -130,7 +130,7 @@ Copia `api-config.example.php` → `api-config.php` y configura:
 
 ---
 
-##  Configuración de HTTPS
+## Configuracion de HTTPS
 
 La PWA requiere HTTPS para funcionar correctamente (service workers, instalación, etc.).
 
@@ -142,7 +142,7 @@ La PWA requiere HTTPS para funcionar correctamente (service workers, instalació
 
 ---
 
-##  Estructura de Archivos
+## Estructura de Archivos
 
 ```
 barrioteca/
@@ -166,7 +166,7 @@ barrioteca/
 
 ---
 
-##  Verificación del Despliegue
+## Verificacion del Despliegue
 
 1. **Probar la API**: Accede a `https://TU-DOMINIO/barrioteca/diagnostico.php` para verificar la conexión con SLiMS.
 2. **Probar la PWA**: Abre la app en un móvil y verifica que:
@@ -178,7 +178,7 @@ barrioteca/
 
 ---
 
-##  Actualización de la PWA
+## Actualizacion de la PWA
 
 Para actualizar la PWA a una nueva versión:
 
