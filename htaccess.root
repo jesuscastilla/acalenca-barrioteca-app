@@ -1,0 +1,20 @@
+# ─────────────────────────────────────────────────────────────
+#  Barrioteca Acalencá — .htaccess de la RAÍZ del dominio
+#  Coloca este archivo en la raíz del servidor web,
+#  donde están las carpetas "slims/" y "barrioteca/".
+#
+#  En Synology suele ser:
+#    /var/services/web/.htaccess
+#    └── slims/
+#    └── barrioteca/
+#
+#  Si ya existe un .htaccess en la raíz,
+#  COPIA SÓLO la RewriteRule que empieza con ^api/
+# ─────────────────────────────────────────────────────────────
+
+RewriteEngine On
+
+# ─── Redirigir /api/* al proxy PHP de la PWA ────────────
+# Cuando la PWA llama a /api/verify-member, Apache lo
+# redirige internamente a /barrioteca/api-proxy.php/verify-member
+RewriteRule ^api/(.*)$ barrioteca/api-proxy.php/$1 [QSA,L]
