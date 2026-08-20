@@ -143,7 +143,7 @@ La PWA también está disponible como **app Android nativa** (.apk) generada con
 
 Cada vez que actualices la PWA en el NAS, la app Android reflejará los cambios automáticamente (no necesita actualización manual, ya que carga la web en vivo).
 
-Para publicar una nueva versión en Google Play, consulta `GUIA_APK.md`.
+Para publicar una nueva versión en Google Play, consulta el `README.md` del repositorio de la app Android (`barrioteca-android-app/`).
 
 ### Google Play
 
