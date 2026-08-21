@@ -1,33 +1,33 @@
 # Manual de Usuaria — Barrioteca Acalenca
 
-Este manual detalla cómo utilizar el sistema de gestión de la **Barrioteca Acalencá**, desde la creación de socias en el panel de administración (SLiMS) hasta el uso cotidiano de la aplicación móvil (PWA) para préstamos y devoluciones.
+Este manual detalla cómo utilizar el sistema de gestión de la **Barrioteca Acalencá**, desde la creación de socias en el panel de administración (SLiMS) hasta el uso cotidiano de la aplicación para préstamos y devoluciones.
 
 ---
 
 ## 1. Gestión de Socias (Panel SLiMS)
 
-Para que una vecina pueda utilizar la PWA, primero debe estar registrada en la base de datos de SLiMS.
+Para que una vecina pueda utilizar la app, primero debe estar registrada en la base de datos de SLiMS.
 
 ### Cómo crear una nueva socia:
 1.  **Accede al panel de administración**: Entra en tu instancia de SLiMS (ej. `https://tu-dominio/slims/admin`).
 2.  **Módulo de Membresía**: En el menú lateral, haz clic en **Membresía** (o *Membership*).
 3.  **Añadir Socia**: Haz clic en el botón **Añadir Nueva Socia**.
 4.  **Datos Obligatorios**:
-    *   **ID de Socia**: Asigna un código único (ej. `SOCIA-001`). Este es el código que se usará para entrar en la PWA.
+    *   **ID de Socia**: Asigna un código único (ej. `SOCIA-001`). Este es el código que se usará para entrar en la app.
     *   **Nombre de la Socia**: Nombre completo.
     *   **Fecha de Nacimiento**: Requerido por el sistema.
     *   **Tipo de Membresía**: Selecciona el perfil correspondiente (ej. Estándar).
-5.  **Fecha de Registro y Expiración**: Asegúrate de que la fecha de expiración sea futura; de lo contrario, la PWA no permitirá realizar préstamos.
+5.  **Fecha de Registro y Expiración**: Asegúrate de que la fecha de expiración sea futura; de lo contrario, la app no permitirá realizar préstamos.
 6.  **Guardar**: Haz clic en **Guardar**.
 
 ---
 
-## 2. Uso de la Aplicación Móvil (PWA)
+## 2. Uso de la Aplicación Móvil
 
-La PWA está diseñada para ser rápida y sencilla, ideal para usar con la cámara del móvil.
+La app está diseñada para ser rápida y sencilla, ideal para usar con la cámara del móvil.
 
 ### Acceso e Identificación:
-1.  **Entrar**: Abre la URL de la PWA en tu navegador móvil.
+1.  **Entrar**: Abre la app (o la URL de la app web en tu navegador móvil).
 2.  **Identificación**: En la pantalla de inicio, introduce tu **ID de Socia** (el que creamos en el paso anterior) y pulsa **Entrar**.
 3.  **Bienvenida**: Si el ID es correcto, verás un mensaje de bienvenida y tu nombre aparecerá como "Socia Activa".
 
@@ -47,12 +47,12 @@ La PWA está diseñada para ser rápida y sencilla, ideal para usar con la cáma
 
 ---
 
-## 3. Instalación en el Móvil
+## 3. Descargar la app
 
-Para que la aplicación funcione como una app nativa (sin barras de navegador):
+La Barrioteca Acalencá está disponible como app nativa en las tiendas oficiales:
 
-*   **En Android (Chrome)**: Cuando aparezca el banner de instalación, pulsa **Instalar**. También puedes ir a los tres puntos de la esquina superior derecha y seleccionar **Instalar aplicación** o **Añadir a pantalla de inicio**.
-*   **En iOS (Safari)**: Pulsa el botón de **Compartir** (cuadrado con flecha hacia arriba) y selecciona **Añadir a pantalla de inicio**.
+*   **En Android**: Abre **Google Play**, busca «Barrioteca Acalencá» y pulsa **Instalar**.
+*   **En iOS (iPhone/iPad)**: Abre la **App Store**, busca «Barrioteca Acalencá» y pulsa **Obtener**.
 
 Una vez instalada, podrás abrir Barrioteca directamente desde el icono en tu pantalla de inicio, como cualquier otra app.
 

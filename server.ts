@@ -5,8 +5,8 @@ import { createServer as createViteServer } from "vite";
 import axios from "axios";
 
 /**
- * Función principal para iniciar el servidor de la PWA
- * Este servidor actúa como proxy entre la PWA y la API de SLiMS en el NAS Synology
+ * Función principal para iniciar el servidor de la app web
+ * Este servidor actúa como proxy entre la app web y la API de SLiMS en el NAS Synology
  */
 async function startServer() {
   const app = express();
@@ -64,7 +64,7 @@ async function startServer() {
         {
           headers: {
             Accept: "application/json",
-            "User-Agent": "Barrioteca-PWA/1.0",
+            "User-Agent": "Barrioteca-App/1.0",
           },
           timeout: 8000,
         }
@@ -119,7 +119,7 @@ async function startServer() {
         {
           headers: {
             Accept: "application/json",
-            "User-Agent": "Barrioteca-PWA/1.0",
+            "User-Agent": "Barrioteca-App/1.0",
           },
           timeout: 8000,
         }
@@ -178,7 +178,7 @@ async function startServer() {
           {
             headers: {
               Accept: "application/json",
-              "User-Agent": "Barrioteca-PWA/1.0",
+              "User-Agent": "Barrioteca-App/1.0",
             },
             timeout: 8000,
           }
@@ -220,7 +220,7 @@ async function startServer() {
             headers: {
               "Content-Type": "application/json",
               Accept: "application/json",
-              "User-Agent": "Barrioteca-PWA/1.0",
+              "User-Agent": "Barrioteca-App/1.0",
             },
             timeout: 8000,
           }
@@ -248,7 +248,7 @@ async function startServer() {
             headers: {
               "Content-Type": "application/json",
               Accept: "application/json",
-              "User-Agent": "Barrioteca-PWA/1.0",
+              "User-Agent": "Barrioteca-App/1.0",
             },
             timeout: 8000,
           }
@@ -344,7 +344,7 @@ async function startServer() {
         {
           headers: {
             Accept: "application/json",
-            "User-Agent": "Barrioteca-PWA/1.0",
+            "User-Agent": "Barrioteca-App/1.0",
           },
           timeout: 8000,
         }
@@ -386,7 +386,7 @@ async function startServer() {
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`[server] PWA ejecutándose en http://localhost:${PORT}`);
+    console.log(`[server] app web ejecutándose en http://localhost:${PORT}`);
     console.log(`[server] SLiMS API: ${SLIMS_API_BASE}`);
     console.log(`[server] Modo: ${process.env.NODE_ENV || "development"}`);
   });

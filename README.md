@@ -1,16 +1,16 @@
-# Barrioteca Acalencá — PWA de Préstamos
+# Barrioteca Acalencá — App web de Préstamos
 
-Aplicación Web Progresiva (PWA) para la gestión vecinal de préstamos y devoluciones de la **Barrioteca Acalencá** en Salobreña.
+Aplicación web para la gestión vecinal de préstamos y devoluciones de la **Barrioteca Acalencá** en Salobreña.
 
 ## ¿Qué es la Barrioteca Acalencá?
 
-Somos una biblioteca vecinal autogestionada. Cualquier vecina puede asociarse, llevarse libros en préstamo y devolverlos cuando termine de leerlos. Todo el sistema funciona con software libre (SLiMS + PWA) alojado en un NAS Synology de la propia barrioteca, sin depender de servicios externos ni ceder datos a terceros.
+Somos una biblioteca vecinal autogestionada. Cualquier vecina puede asociarse, llevarse libros en préstamo y devolverlos cuando termine de leerlos. Todo el sistema funciona con software libre (SLiMS + app web) alojado en un NAS Synology de la propia barrioteca, sin depender de servicios externos ni ceder datos a terceros.
 
 ## Cómo funciona la autogestión
 
 1. **Alta de socias**: Una administradora da de alta a las vecinas en el panel de SLiMS (backend), asignando un ID de socia único (ej. `SOCIA-001`).
-2. **Identificación**: Cada socia introduce su ID en la PWA desde su móvil para identificarse.
-3. **Préstamo**: Escanea el código de barras (ISBN/ASIN) del libro que quiere llevarse. La PWA se comunica con SLiMS y registra el préstamo.
+2. **Identificación**: Cada socia introduce su ID en la app web desde su móvil para identificarse.
+3. **Préstamo**: Escanea el código de barras (ISBN/ASIN) del libro que quiere llevarse. La app web se comunica con SLiMS y registra el préstamo.
 4. **Devolución**: Escanea el mismo código al devolver el libro. SLiMS lo marca como disponible.
 5. **Catálogo**: Cualquier socia puede buscar libros por título, autora o ISBN desde la app.
 
@@ -19,16 +19,16 @@ Todo queda registrado en la base de datos de SLiMS, permitiendo saber en todo mo
 ## Características
 
 - **Escaneo de códigos**: Usa la cámara del móvil para leer códigos de barras (ISBN/ASIN) de libros y tarjetas de socias.
-- **Acceso directo**: Al instalarse como app, funciona como aplicación nativa con acceso rápido desde la pantalla de inicio.
+- **Disponible en Google Play**: La app nativa para Android se descarga desde Google Play y se actualiza sola con cada cambio del frontend.
 - **Lenguaje inclusivo**: Interfaz en femenino (socia, autora, bienvenida), coherente con el espíritu del proyecto.
 - **Privacidad total**: Todo corre en el NAS de la barrioteca. No se comparten datos con terceros.
-- **HTTPS automático**: Redirección forzosa de HTTP a HTTPS para que la PWA sea instalable y los Service Workers funcionen correctamente.
+- **HTTPS automático**: Redirección forzosa de HTTP a HTTPS para una navegación segura.
 - **Dos modos de backend**: Puede funcionar con Node.js (Express) o con PHP (Apache/Nginx) como proxy hacia SLiMS.
 
 ## Tecnología
 
 - **Frontend**: React 19 + TypeScript + Vite + Tailwind CSS 4
-- **Backend proxy (Node.js)**: Express + Axios (sirve la PWA y hace de puente con SLiMS)
+- **Backend proxy (Node.js)**: Express + Axios (sirve la app web y hace de puente con SLiMS)
 - **Backend proxy (PHP)**: api-proxy.php + cURL (alternativa para servidores web tradicionales)
 - **Backend real**: SLiMS 9 (PHP + MariaDB) con API REST
 - **Escáner**: html5-qrcode (lectura de códigos de barras desde la cámara)
@@ -74,9 +74,9 @@ npm run build
 # Copiar dist/ y api-proxy.php al servidor web del NAS
 ```
 
-## HTTPS (obligatorio para PWA)
+## HTTPS (recomendado)
 
-La PWA necesita HTTPS para que los Service Workers funcionen y la app se pueda instalar. Debes configurar un certificado SSL (gratuito con Let's Encrypt desde Synology) y un proxy inverso o forzar HTTPS desde Web Station. Consulta [`DEPLOYMENT_GUIDE.md`](DEPLOYMENT_GUIDE.md) para instrucciones paso a paso.
+La app web funciona sobre HTTPS (la redirección forzosa HTTP → HTTPS ya está incluida en `index.html`). Debes configurar un certificado SSL (gratuito con Let's Encrypt desde Synology) y un proxy inverso o forzar HTTPS desde Web Station. Consulta [`DEPLOYMENT_GUIDE.md`](DEPLOYMENT_GUIDE.md) para instrucciones paso a paso.
 
 ## Archivos de configuración sensibles
 
@@ -101,24 +101,24 @@ La Barrioteca incluye varios scripts PHP para añadir libros al catalogo sin pas
 
 Los scripts se suben al NAS en `/slims/` (no en `/barrioteca/`) y se eliminan despues de usarlos. El script `anadir-libro.php` genera automaticamente una etiqueta con codigo de barras imprimible para pegar en cada libro fisico.
 
-## Libros sin ISBN en la PWA
+## Libros sin ISBN en la app web
 
-Para libros que no tienen ISBN, la PWA soporta tres metodos de prestamo/devolucion:
+Para libros que no tienen ISBN, la app web soporta tres metodos de prestamo/devolucion:
 
 - **Escanear etiqueta**: La administracion imprime una etiqueta con codigo de barras `LIB-XX` desde `anadir-libro.php` y la pega en el libro. La socia escanea ese codigo.
 - **Entrada manual**: En la vista de escaneo hay un campo "Entrada Manual" donde se puede escribir el codigo `LIB-XX`.
 - **Boton "Pedir" en catalogo**: Al buscar un libro en el catalogo, si esta disponible aparece un boton "Pedir" que ejecuta el prestamo directamente.
 
-## App Android (APK)
+## App Android (Google Play)
 
-La PWA también está disponible como **app Android nativa** (.apk) generada con **PWABuilder**.
+La Barrioteca Acalencá está disponible como **app Android nativa** en Google Play.
 
-### Descarga e instalación
+### Instalación
 
-1. Descarga el archivo `Barrioteca Acalencá.apk` desde la carpeta `barrioteca-android-app/`
-2. Transfiere el APK a tu móvil Android
-3. Abre el archivo y permite la instalación desde orígenes desconocidos
-4. La app se instala y aparece en tu pantalla de inicio como "Barrioteca Acalencá"
+1. Abre Google Play en tu móvil Android
+2. Busca "Barrioteca Acalencá"
+3. Pulsa **Instalar**
+4. La app aparece en tu pantalla de inicio como "Barrioteca Acalencá"
 
 ### Características de la app
 
@@ -126,9 +126,9 @@ La PWA también está disponible como **app Android nativa** (.apk) generada con
 |---------------|---------|
 | **Tipo** | Trusted Web Activity (TWA) |
 | **URL** | `https://pelotxo.synology.me/barrioteca` |
-| **minSdk** | 23 (Android 6.0) |
-| **targetSdk** | 35 |
-| **Package ID** | `barrioteca.app.pelotxo` |
+| **minSdk** | 28 (Android 9 o superior) |
+| **targetSdk** | 36 |
+| **Package ID** | `com.lebeche.barrioteca` |
 | **Pantalla completa** | ✅ Sin barra de navegación |
 | **Cámara** | ✅ Escáner de códigos de barras |
 | **Conexión** | Se conecta a tu NAS desde cualquier parte |
@@ -141,13 +141,13 @@ La PWA también está disponible como **app Android nativa** (.apk) generada con
 
 ### Actualizar la app
 
-Cada vez que actualices la PWA en el NAS, la app Android reflejará los cambios automáticamente (no necesita actualización manual, ya que carga la web en vivo).
+Cada vez que actualices la app web en el NAS, la app Android reflejará los cambios automáticamente (no necesita actualización manual, ya que carga la web en vivo).
 
 Para publicar una nueva versión en Google Play, consulta el `README.md` del repositorio de la app Android (`barrioteca-android-app/`).
 
 ### Google Play
 
-Próximamente disponible en Google Play Store. Consulta el repositorio de documentación: [acalenca-barrioteca-app-android](https://github.com/jesuscastilla/acalenca-barrioteca-app-android).
+Ya disponible en Google Play Store. La documentación de publicación está en el repositorio: [acalenca-barrioteca-app-android](https://github.com/jesuscastilla/acalenca-barrioteca-app-android).
 
 ### App Store (iOS)
 
@@ -157,7 +157,7 @@ También disponible para iPhone y iPad. Consulta el repositorio: [acalenca-barri
 
 ## Infraestructura
 
-La Barrioteca Acalenca se aloja en un **NAS Synology** que funciona como nube local encriptada y autogestionada, sin dependencia de servidores externos. El acceso al panel de administracion (DSM) se realiza via `https://pelotxo.synology.me:5001`. La PWA y SLiMS se sirven por HTTPS estandar (puerto 443).
+La Barrioteca Acalenca se aloja en un **NAS Synology** que funciona como nube local encriptada y autogestionada, sin dependencia de servidores externos. El acceso al panel de administracion (DSM) se realiza via `https://pelotxo.synology.me:5001`. La app web y SLiMS se sirven por HTTPS estandar (puerto 443).
 
 ## Repositorios relacionados
 

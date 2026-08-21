@@ -18,8 +18,6 @@ import {
   User,
   UserPlus,
   HelpCircle,
-  X,
-  Download
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Scanner } from './components/Scanner';
@@ -62,7 +60,7 @@ function getEndpoint(): string {
 }
 
 /**
- * Componente principal de la PWA Barrioteca Acalencá
+ * Componente principal de la app web Barrioteca Acalencá
  * Gestiona la navegación, el estado de las socias y las operaciones de préstamo/devolución
  */
 export default function App() {
@@ -109,10 +107,6 @@ export default function App() {
   const [apiError, setApiError] = useState<string | null>(null);
   const [memberLoans, setMemberLoans] = useState<any[]>([]);
   const [loansLoading, setLoansLoading] = useState(false);
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [isInstallable, setIsInstallable] = useState(false);
-  const [showInstallToast, setShowInstallToast] = useState(false);
-  const [isInstalled, setIsInstalled] = useState(false);
 
   // Limpiar localStorage al iniciar (modo pruebas)
   useEffect(() => {
@@ -126,66 +120,6 @@ export default function App() {
     setUsers([]);
   }, []);
 
-  // Gestión de instalación PWA
-  useEffect(() => {
-    // Detectar si ya está instalada como app standalone
-    const isStandalone =
-      window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as any).standalone === true;
-    if (isStandalone) {
-      setIsInstalled(true);
-      return;
-    }
-
-    const dismissed = localStorage.getItem('pwa_install_dismissed');
-    // Si ya se descartó, no volver a mostrar
-    if (dismissed) return;
-
-    const handleBeforeInstallPrompt = (e: any) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      setIsInstallable(true);
-
-      // Mostrar toast automático tras 3 segundos si no fue descartado
-      if (!localStorage.getItem('pwa_install_dismissed')) {
-        setTimeout(() => setShowInstallToast(true), 3000);
-      }
-    };
-
-    const handleAppInstalled = () => {
-      setIsInstalled(true);
-      setIsInstallable(false);
-      setShowInstallToast(false);
-      setDeferredPrompt(null);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    window.addEventListener('appinstalled', handleAppInstalled);
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      window.removeEventListener('appinstalled', handleAppInstalled);
-    };
-  }, []);
-
-  const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      setDeferredPrompt(null);
-      setIsInstallable(false);
-      setShowInstallToast(false);
-    } else {
-      // Si rechaza, guardar en localStorage para no molestar más
-      localStorage.setItem('pwa_install_dismissed', '1');
-      setShowInstallToast(false);
-    }
-  };
-
-  const handleDismissToast = () => {
-    localStorage.setItem('pwa_install_dismissed', '1');
-    setShowInstallToast(false);
-  };
   
   const activeUser = users.find(u => u.id === activeUserId);
 
@@ -495,9 +429,7 @@ export default function App() {
     <div className="min-h-screen bg-[#F5F5F0] text-[#141414] font-sans selection:bg-amber-200">
       <header className="sticky top-0 z-50 bg-[#F5F5F0]/80 backdrop-blur-md border-b border-gray-200 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="bg-ink p-1 rounded-xl text-bg shadow-lg">
-            <img src="/logo.png" alt="Logo Barrioteca" className="w-10 h-10 object-contain" />
-          </div>
+            <img src="./logo.png" alt="Logo Barrioteca" className="w-10 h-10 object-contain" />
           <div>
             <h1 className="text-xl font-serif italic font-bold tracking-tight">Barrioteca Acalencá</h1>
             <p className="text-[10px] font-mono tracking-wider opacity-60">Gestión de Préstamos</p>
@@ -517,126 +449,12 @@ export default function App() {
         )}
       </header>
 
-      {/* ── Toast de instalación PWA ── */}
-      <AnimatePresence>
-        {showInstallToast && isInstallable && !localStorage.getItem('pwa_install_dismissed') && (
-          <motion.div
-            id="pwa-install-toast"
-            initial={{ opacity: 0, y: 80, scale: 0.92 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 60, scale: 0.95 }}
-            transition={{ type: 'spring', stiffness: 320, damping: 28 }}
-            className="fixed bottom-24 left-4 right-4 z-[200] max-w-sm mx-auto"
-          >
-            <div className="relative bg-[#141414] text-white rounded-[2rem] shadow-2xl overflow-hidden">
-              {/* Gradiente decorativo superior */}
-              <div className="absolute inset-0 bg-gradient-to-br from-amber-500/20 via-transparent to-transparent pointer-events-none" />
-
-              <div className="relative p-5">
-                {/* Cabecera */}
-                <div className="flex items-start justify-between gap-3 mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-amber-400 text-black p-2.5 rounded-2xl shadow-lg">
-                      <Download size={20} />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-amber-400 mb-0.5">Acceso rápido</p>
-                      <h4 className="font-bold text-base leading-tight">Instalar Barrioteca</h4>
-                    </div>
-                  </div>
-                  <button
-                    id="pwa-toast-close"
-                    onClick={handleDismissToast}
-                    className="p-1.5 bg-white/10 hover:bg-white/20 rounded-xl transition-colors shrink-0"
-                    aria-label="Cerrar notificación"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-
-                {/* Descripción */}
-                <p className="text-xs text-white/70 leading-relaxed mb-4">
-                  Añade la app a tu pantalla de inicio para un acceso más rápido desde tu dispositivo móvil.
-                </p>
-
-                {/* Beneficios */}
-                <div className="flex gap-2 mb-4">
-                  {['Sin navegador', 'Notificaciones'].map(tag => (
-                    <span key={tag} className="text-[10px] font-bold bg-white/10 text-white/70 px-2.5 py-1 rounded-full">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-
-                {/* Acciones */}
-                <div className="flex gap-2">
-                  <button
-                    id="pwa-install-btn"
-                    onClick={handleInstallClick}
-                    className="flex-1 bg-amber-400 hover:bg-amber-300 text-black font-bold text-sm py-3 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20"
-                  >
-                    <Download size={16} />
-                    Instalar ahora
-                  </button>
-                  <button
-                    onClick={handleDismissToast}
-                    className="px-4 py-3 bg-white/10 hover:bg-white/15 text-white/70 text-sm font-medium rounded-2xl transition-all"
-                  >
-                    Ahora no
-                  </button>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       <main className="container mx-auto max-w-2xl px-6 py-6 pb-32">
         <div>
 
         {view === 'dashboard' && (
           <div className="space-y-8">
-            {/* ── Banner de instalación PWA en el inicio ── */}
-            <AnimatePresence>
-              {isInstallable && !isInstalled && !localStorage.getItem('pwa_install_dismissed_home') && (
-                <motion.div
-                  initial={{ opacity: 0, y: -20, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                  className="bg-gradient-to-br from-amber-50 to-amber-100/60 border border-amber-200 rounded-3xl p-5 relative overflow-hidden"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-transparent to-transparent pointer-events-none" />
-                  <div className="relative flex items-center gap-4">
-                    <div className="bg-amber-400 text-black p-3 rounded-2xl shrink-0 shadow-lg">
-                      <Download size={22} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-sm text-amber-900">¿Quieres acceso rápido?</p>
-                      <p className="text-xs text-amber-700/70 mt-0.5 leading-tight">
-                        Añade Barrioteca a tu pantalla de inicio y gestiona préstamos sin abrir el navegador.
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        id="home-install-btn"
-                        onClick={handleInstallClick}
-                        className="bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs px-4 py-2.5 rounded-xl transition-all active:scale-95 flex items-center gap-1.5 shadow-md"
-                      >
-                        <Download size={13} /> Instalar
-                      </button>
-                      <button
-                        onClick={() => localStorage.setItem('pwa_install_dismissed_home', '1')}
-                        className="p-2 hover:bg-amber-200/50 rounded-xl transition-colors text-amber-500"
-                        aria-label="Cerrar"
-                      >
-                        <X size={16} />
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
 
             <section className="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm">
               <div className="flex items-center justify-between mb-4">
@@ -894,50 +712,13 @@ export default function App() {
               <div className="w-10" />
             </div>
 
-            {/* ── Banner instalar PWA en Ajustes ── */}
-            {!isInstalled && isInstallable && !localStorage.getItem('pwa_install_dismissed') && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-[#141414] text-white rounded-3xl p-5 relative overflow-hidden"
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-amber-500/15 via-transparent to-transparent pointer-events-none" />
-                <div className="relative flex items-center gap-4">
-                  <div className="bg-amber-400 text-black p-3 rounded-2xl shrink-0">
-                    <Smartphone size={22} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm">Instalar como app</p>
-                    <p className="text-xs text-white/60 mt-0.5 leading-tight">Acceso directo desde tu pantalla de inicio, sin navegador</p>
-                  </div>
-                  <button
-                    id="settings-install-btn"
-                    onClick={handleInstallClick}
-                    className="shrink-0 bg-amber-400 hover:bg-amber-300 text-black font-bold text-xs px-4 py-2.5 rounded-xl transition-all active:scale-95 flex items-center gap-1.5"
-                  >
-                    <Download size={13} /> Instalar
-                  </button>
-                </div>
-              </motion.div>
-            )}
-            {isInstalled && (
-              <div className="bg-green-50 border border-green-100 rounded-3xl p-4 flex items-center gap-3">
-                <div className="bg-green-100 text-green-600 p-2 rounded-xl">
-                  <CheckCircle size={18} />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-green-800">App instalada</p>
-                  <p className="text-xs text-green-600">Barrioteca ya está en tu pantalla de inicio</p>
-                </div>
-              </div>
-            )}
 
             {settingsSubView === 'help' && (
               <div className="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm space-y-6">
                 <div className="space-y-2">
                   <h3 className="font-bold flex items-center gap-2 text-amber-700"><Info size={18} /> Sobre la App</h3>
                   <p className="text-sm text-gray-600 leading-relaxed">
-                    Esta PWA ha sido diseñada para la <strong>Barrioteca Acalencá</strong>. Permite gestionar préstamos y devoluciones de forma rápida desde cualquier dispositivo móvil.
+                    Esta aplicación web ha sido diseñada para la <strong>Barrioteca Acalencá</strong>. Permite gestionar préstamos y devoluciones de forma rápida desde cualquier dispositivo móvil.
                   </p>
                 </div>
                 
@@ -948,7 +729,7 @@ export default function App() {
                       { icon: <UserPlus size={14} />, text: "Identifícate con tu ID de socia en la pantalla principal." },
                       { icon: <Scan size={14} />, text: "Pulsa 'Escanear' y elige 'Préstamo' o 'Devolución'." },
                       { icon: <ArrowRightLeft size={14} />, text: "Escanea el código de barras del libro (ISBN o ASIN)." },
-                      { icon: <Smartphone size={14} />, text: "Instala la app en tu móvil para tener acceso directo desde la pantalla de inicio." }
+                      { icon: <Smartphone size={14} />, text: "Descárgala desde Google Play (Android) o App Store (iOS) para tener acceso directo desde la pantalla de inicio." }
                     ].map((item, i) => (
                       <li key={i} className="flex items-start gap-3 text-sm text-gray-600">
                         <div className="mt-0.5 text-amber-600">{item.icon}</div>

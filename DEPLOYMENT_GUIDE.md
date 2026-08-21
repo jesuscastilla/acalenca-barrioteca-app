@@ -1,7 +1,7 @@
 #  Guía de Despliegue — Barrioteca Acalencá
 
 Esta guía explica cómo desplegar las dos aplicaciones que componen el sistema:
-1. **La PWA** (frontend React + backend proxy)
+1. **La app web** (frontend React + backend proxy)
 2. **SLiMS** (sistema de gestión bibliotecaria en el NAS Synology)
 
 ---
@@ -9,7 +9,7 @@ Esta guía explica cómo desplegar las dos aplicaciones que componen el sistema:
 ## Arquitectura
 
 ```
- Navegador móvil (PWA instalada o web)
+ Navegador móvil (web)
          │
          ▼
 ┌─────────────────────────────────────┐
@@ -37,7 +37,7 @@ Esta guía explica cómo desplegar las dos aplicaciones que componen el sistema:
 
 ### Opción A: Node.js (recomendado para desarrollo y producción ligera)
 
-El servidor `server.ts` usa Express.js y actúa como proxy hacia SLiMS y sirve los archivos estáticos de la PWA.
+El servidor `server.ts` usa Express.js y actúa como proxy hacia SLiMS y sirve los archivos estáticos de la app web.
 
 **Requisitos:** Node.js 18+ en el NAS Synology.
 
@@ -53,7 +53,7 @@ cp .env.example .env
 #   PORT=3000
 #   NODE_ENV=production
 
-# 3. Construir la PWA para producción
+# 3. Construir la app web para producción
 npm run build
 
 # 4. Iniciar el servidor
@@ -64,16 +64,16 @@ El servidor escuchará en `http://0.0.0.0:3000`. Configura un **proxy inverso** 
 
 ### Opción B: PHP + Apache/Nginx (recomendado para NAS con servidor web)
 
-El archivo `api-proxy.php` actúa como proxy hacia SLiMS. La PWA se sirve como archivos estáticos desde el servidor web del NAS.
+El archivo `api-proxy.php` actúa como proxy hacia SLiMS. La app web se sirve como archivos estáticos desde el servidor web del NAS.
 
 **Requisitos:** Apache o Nginx con PHP 7.4+ y cURL habilitado.
 
-**⚠️ IMPORTANTE — `api-proxy.php` DEBE estar en la RAÍZ de la PWA:**
+**⚠️ IMPORTANTE — `api-proxy.php` DEBE estar en la RAÍZ de la app web:**
 ```
 /barrioteca/
-├── api-proxy.php        ← AQUÍ, en la raíz de la PWA
+├── api-proxy.php        ← AQUÍ, en la raíz de la app web
 ├── api-config.php        ← Junto a api-proxy.php
-├── index.html            ← Build de la PWA
+├── index.html            ← Build de la app web
 ├── assets/               ← JS y CSS compilados
 └── ...
 ```
@@ -82,7 +82,7 @@ El archivo `api-proxy.php` actúa como proxy hacia SLiMS. La PWA se sirve como a
 # 1. Subir la carpeta del proyecto al NAS
 #    Ejemplo: /var/services/web/barrioteca/
 
-# 2. COPIAR api-proxy.php a la RAÍZ de la PWA si no está ya allí
+# 2. COPIAR api-proxy.php a la RAÍZ de la app web si no está ya allí
 #    Asegúrate de que api-proxy.php está en /barrioteca/api-proxy.php
 #    (el frontend llama a ./api-proxy.php, que se resuelve contra esta ruta)
 
@@ -96,7 +96,7 @@ cp api-config.example.php api-config.php
 #    No se necesita regla de reescritura porque el frontend llama
 #    directamente a ./api-proxy.php?action=... con rutas relativas.
 
-# 5. Construir la PWA
+# 5. Construir la app web
 npm install
 npm run build
 
@@ -132,7 +132,7 @@ Copia `api-config.example.php` → `api-config.php` y configura:
 
 ## Configuracion de HTTPS
 
-La PWA requiere HTTPS para funcionar correctamente (service workers, instalación, etc.).
+La app web funciona correctamente sobre HTTPS.
 
 1. En el NAS Synology, ve a **Panel de Control → Portal de Inicio de Sesión → Avanzado → Proxy Inverso**.
 2. Crea una regla:
@@ -151,9 +151,8 @@ barrioteca/
 │   ├── main.tsx            # Punto de entrada
 │   └── components/         # Componentes (Scanner, CatalogSearch, BorrowedBooks)
 ├── public/                 # Archivos estáticos
-│   ├── manifest.json       # Configuración PWA
-│   ├── sw.js               # Service Worker
-│   └── icon*.png           # Iconos PWA
+│   ├── logo.png            # Logo de la app
+│   └── icon.png            # Favicon
 ├── server.ts               # Servidor Node.js (proxy + estáticos)
 ├── api-proxy.php           # Proxy PHP alternativo
 ├── api-config.example.php  # Plantilla de configuración PHP
@@ -169,18 +168,18 @@ barrioteca/
 ## Verificacion del Despliegue
 
 1. **Probar la API**: Accede a `https://TU-DOMINIO/barrioteca/diagnostico.php` para verificar la conexión con SLiMS.
-2. **Probar la PWA**: Abre la app en un móvil y verifica que:
+2. **Probar la app web**: Abre la app en un móvil y verifica que:
    - Puedes iniciar sesión con un ID de socia válido
    - El escáner funciona (pide permisos de cámara)
-   - Aparece el banner de instalación PWA
+   - Se ve el logo de la app en la cabecera
    - Puedes buscar en el catálogo
 3. **Probar préstamo/devolución**: Realiza un préstamo y una devolución con un libro de prueba.
 
 ---
 
-## Actualizacion de la PWA
+## Actualizacion de la app web
 
-Para actualizar la PWA a una nueva versión:
+Para actualizar la app web a una nueva versión:
 
 ```bash
 git pull
@@ -189,7 +188,7 @@ npm run build
 # Reiniciar el servidor Node.js o recargar Apache/Nginx
 ```
 
-El Service Worker se actualizará automáticamente en los dispositivos de las usuarias la próxima vez que abran la app.
+Los cambios se verán en los dispositivos de las usuarias la próxima vez que abran la app (recargando la página).
 
 ---
 
