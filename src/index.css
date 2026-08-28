@@ -13,6 +13,7 @@
 @layer base {
   body {
     @apply bg-bg text-ink;
+    padding-bottom: env(safe-area-inset-bottom);
   }
 }
 

@@ -29,7 +29,7 @@ export const BorrowedBooks: React.FC<BorrowedBooksProps> = ({ books }) => {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-serif italic mb-6 border-b border-gray-200 pb-2">Libros en préstamo</h2>
+      <h2 className="text-xl sm:text-2xl font-serif italic mb-6 border-b border-gray-200 pb-2">Libros en préstamo</h2>
       <div className="grid gap-4">
         {books.map((book, index) => (
           <motion.div
@@ -40,7 +40,7 @@ export const BorrowedBooks: React.FC<BorrowedBooksProps> = ({ books }) => {
             className="group relative bg-[#FDFDFB] border border-gray-200 p-5 rounded-2xl shadow-sm hover:shadow-md hover:border-gray-300 transition-all cursor-pointer"
             id={`book-${book.id}`}
           >
-            <div className="flex justify-between items-start mb-2">
+            <div className="flex flex-wrap justify-between items-start gap-2 mb-2">
               <h3 className="font-bold text-lg leading-tight group-hover:text-amber-900 transition-colors">{book.title}</h3>
               <div className="flex items-center gap-1 px-2 py-1 bg-amber-50 text-amber-700 rounded-lg text-[10px] font-bold uppercase tracking-wider">
                 <Calendar size={12} />
@@ -55,7 +55,7 @@ export const BorrowedBooks: React.FC<BorrowedBooksProps> = ({ books }) => {
               </div>
               <div className="flex items-center gap-1.5 font-mono text-[11px] opacity-70">
                 <Hash size={12} />
-                <span>{book.isbn}</span>
+                <span className="break-all">{book.isbn}</span>
               </div>
             </div>
 

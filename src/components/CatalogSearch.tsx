@@ -50,7 +50,7 @@ export const CatalogSearch: React.FC<CatalogSearchProps> = ({ onBack, endpoint }
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-serif italic mb-6 border-b border-gray-200 pb-2">Catálogo de la Biblioteca</h2>
+      <h2 className="text-xl sm:text-2xl font-serif italic mb-6 border-b border-gray-200 pb-2">Catálogo de la Biblioteca</h2>
       
       <div className="relative">
         <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
@@ -61,7 +61,7 @@ export const CatalogSearch: React.FC<CatalogSearchProps> = ({ onBack, endpoint }
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Busca por título, autora o ISBN..."
-          className="w-full pl-12 pr-4 py-4 bg-white rounded-2xl border-2 border-ink/5 focus:border-ink/20 focus:outline-none transition-all shadow-sm"
+          className="w-full pl-12 pr-4 py-3 sm:py-4 bg-white rounded-2xl border-2 border-ink/5 focus:border-ink/20 focus:outline-none transition-all shadow-sm"
         />
       </div>
 
@@ -101,7 +101,7 @@ export const CatalogSearch: React.FC<CatalogSearchProps> = ({ onBack, endpoint }
                   </div>
                   <div className="flex items-center gap-1.5 font-mono text-[10px]">
                     <Hash size={10} />
-                    <span>{book.isbn}</span>
+                    <span className="break-all">{book.isbn}</span>
                   </div>
                 </div>
               </div>

@@ -427,12 +427,12 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#F5F5F0] text-[#141414] font-sans selection:bg-amber-200">
-      <header className="sticky top-0 z-50 bg-[#F5F5F0]/80 backdrop-blur-md border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+      <header className="sticky top-0 z-50 bg-[#F5F5F0]/80 backdrop-blur-md border-b border-gray-200 px-4 sm:px-6 pt-[max(env(safe-area-inset-top),1rem)] pb-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-            <img src="./logo.png" alt="Logo Barrioteca" className="w-10 h-10 object-contain" />
+            <img src="./logo.png" alt="Logo Barrioteca" className="w-9 h-9 sm:w-10 sm:h-10 object-contain" />
           <div>
-            <h1 className="text-xl font-serif italic font-bold tracking-tight">Barrioteca Acalencá</h1>
-            <p className="text-[10px] font-mono tracking-wider opacity-60">Gestión de Préstamos</p>
+            <h1 className="text-lg sm:text-xl font-serif italic font-bold tracking-tight">Barrioteca Acalencá</h1>
+            <p className="hidden sm:block text-[10px] font-mono tracking-wider opacity-60">Gestión de Préstamos</p>
           </div>
         </div>
         
@@ -442,23 +442,23 @@ export default function App() {
             Sincronizando...
           </div>
         ) : (
-          <div className="flex items-center gap-1.5 text-[10px] font-mono opacity-80 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full text-amber-900">
+          <div className="flex items-center gap-1.5 text-[10px] font-mono opacity-80 bg-amber-50 border border-amber-200 px-2 sm:px-3 py-1 rounded-full text-amber-900">
             <Globe size={11} />
-            <span>Producción</span>
+            <span className="hidden sm:inline">Producción</span>
           </div>
         )}
       </header>
 
 
-      <main className="container mx-auto max-w-2xl px-6 py-6 pb-32">
+      <main className="container mx-auto max-w-2xl px-4 sm:px-6 py-6 pb-36">
         <div>
 
         {view === 'dashboard' && (
           <div className="space-y-8">
 
-            <section className="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm">
+            <section className="bg-white p-5 sm:p-6 rounded-3xl border border-gray-200 shadow-sm">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-serif italic font-bold">Bienvenida</h2>
+                <h2 className="text-xl sm:text-2xl font-serif italic font-bold">Bienvenida</h2>
                 <div className="bg-amber-100 p-2 rounded-full text-amber-700">
                   <User size={20} />
                 </div>
@@ -479,7 +479,7 @@ export default function App() {
                     <button 
                       onClick={() => handleLogin(loginInput)}
                       disabled={isLoggingIn || !loginInput}
-                      className="bg-ink text-bg px-6 py-3 rounded-2xl text-sm font-bold uppercase tracking-widest disabled:opacity-50 transition-all hover:bg-black active:scale-95"
+                      className="bg-ink text-bg px-4 sm:px-6 py-3 rounded-2xl text-sm font-bold uppercase tracking-widest disabled:opacity-50 transition-all hover:bg-black active:scale-95"
                     >
                       {isLoggingIn ? <Loader2 className="animate-spin" size={18} /> : 'Entrar'}
                     </button>
@@ -491,7 +491,7 @@ export default function App() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs font-mono opacity-50 mb-1 uppercase tracking-tighter">Socia Activa</p>
-                    <h3 className="text-xl font-bold">{activeUser.nombre}</h3>
+                    <h3 className="text-lg sm:text-xl font-bold break-words">{activeUser.nombre}</h3>
                     <p className="text-xs opacity-60 mt-1 flex items-center gap-1"><Code size={10} /> {activeUser.barcode}</p>
                   </div>
                   <button 
@@ -504,10 +504,10 @@ export default function App() {
               )}
             </section>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
               <button 
                 onClick={() => setView('scan')}
-                className="bg-ink text-bg p-6 rounded-3xl flex flex-col items-center gap-3 shadow-xl hover:bg-black transition-all active:scale-95 group"
+                className="bg-ink text-bg p-5 sm:p-6 rounded-3xl flex flex-col items-center gap-3 shadow-xl hover:bg-black transition-all active:scale-95 group"
               >
                 <div className="bg-bg/10 p-3 rounded-2xl group-hover:scale-110 transition-transform">
                   <Scan size={32} />
@@ -516,7 +516,7 @@ export default function App() {
               </button>
               <button 
                 onClick={() => setView('search')}
-                className="bg-white text-ink p-6 rounded-3xl border border-gray-200 flex flex-col items-center gap-3 shadow-sm hover:border-gray-300 transition-all active:scale-95 group"
+                className="bg-white text-ink p-5 sm:p-6 rounded-3xl border border-gray-200 flex flex-col items-center gap-3 shadow-sm hover:border-gray-300 transition-all active:scale-95 group"
               >
                 <div className="bg-gray-100 p-3 rounded-2xl group-hover:scale-110 transition-transform">
                   <Search size={32} />
@@ -527,7 +527,7 @@ export default function App() {
 
             {/* Prestamos activos */}
             {activeUser && (
-              <section className="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm space-y-4">
+              <section className="bg-white p-5 sm:p-6 rounded-3xl border border-gray-200 shadow-sm space-y-4">
                 <h3 className="text-sm font-bold uppercase tracking-widest opacity-60 flex items-center gap-2">
                   <FileText size={14} /> Mis Prestamos
                 </h3>
@@ -620,13 +620,13 @@ export default function App() {
               <div className="flex bg-white p-1 rounded-2xl border border-gray-200 shadow-sm">
                 <button 
                   onClick={() => setSelectedAction('prestamo')}
-                  className={`px-6 py-2 rounded-xl text-xs font-bold uppercase transition-all ${selectedAction === 'prestamo' ? 'bg-ink text-bg shadow-md' : 'text-gray-400'}`}
+                  className={`px-4 sm:px-6 py-2 rounded-xl text-xs font-bold uppercase transition-all ${selectedAction === 'prestamo' ? 'bg-ink text-bg shadow-md' : 'text-gray-400'}`}
                 >
                   Préstamo
                 </button>
                 <button 
                   onClick={() => setSelectedAction('devolucion')}
-                  className={`px-6 py-2 rounded-xl text-xs font-bold uppercase transition-all ${selectedAction === 'devolucion' ? 'bg-ink text-bg shadow-md' : 'text-gray-400'}`}
+                  className={`px-4 sm:px-6 py-2 rounded-xl text-xs font-bold uppercase transition-all ${selectedAction === 'devolucion' ? 'bg-ink text-bg shadow-md' : 'text-gray-400'}`}
                 >
                   Devolución
                 </button>
@@ -664,7 +664,7 @@ export default function App() {
               </AnimatePresence>
             </div>
 
-            <div className="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm space-y-4">
+            <div className="bg-white p-5 sm:p-6 rounded-3xl border border-gray-200 shadow-sm space-y-4">
               <div className="flex items-center justify-between">
                 <h4 className="text-xs font-bold uppercase tracking-widest opacity-60">Entrada Manual</h4>
                 <div className="flex items-center gap-1 text-[10px] font-mono opacity-40">
@@ -682,7 +682,7 @@ export default function App() {
                 <button 
                   onClick={() => handleScanSuccess(manualCode)}
                   disabled={syncing || !manualCode}
-                  className="bg-ink text-bg px-6 py-3 rounded-2xl text-sm font-bold uppercase tracking-widest disabled:opacity-50 transition-all hover:bg-black active:scale-95"
+                  className="bg-ink text-bg px-4 sm:px-6 py-3 rounded-2xl text-sm font-bold uppercase tracking-widest disabled:opacity-50 transition-all hover:bg-black active:scale-95"
                 >
                   {syncing ? <Loader2 className="animate-spin" size={18} /> : 'Enviar'}
                 </button>
@@ -745,7 +745,7 @@ export default function App() {
         </div>
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 bg-[#F5F5F0]/80 backdrop-blur-xl border-t border-gray-200 px-8 py-4 flex items-center justify-between z-50">
+      <nav className="fixed bottom-0 left-0 right-0 bg-[#F5F5F0]/80 backdrop-blur-xl border-t border-gray-200 px-4 sm:px-8 pt-3 sm:pt-4 pb-[max(env(safe-area-inset-bottom),0.75rem)] flex items-center justify-between z-50">
         {[
           { id: 'dashboard', icon: <Home size={24} />, label: 'Inicio' },
           { id: 'search', icon: <Search size={24} />, label: 'Buscar' },
