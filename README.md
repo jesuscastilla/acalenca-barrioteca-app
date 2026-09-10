@@ -2,6 +2,10 @@
 
 Aplicación web para la gestión vecinal de préstamos y devoluciones de la **Barrioteca Acalencá** en Salobreña.
 
+> **Acceso universal**: esta app web se mantiene como canal principal para quienes **no usan
+> smartphone** (desde cualquier navegador de ordenador o tablet) y como alternativa directa en
+> **iOS**, además de las apps nativas de Android e iOS.
+
 ## ¿Qué es la Barrioteca Acalencá?
 
 Somos una biblioteca vecinal autogestionada. Cualquier vecina puede asociarse, llevarse libros en préstamo y devolverlos cuando termine de leerlos. Todo el sistema funciona con software libre (SLiMS + app web) alojado en un NAS Synology de la propia barrioteca, sin depender de servicios externos ni ceder datos a terceros.
@@ -124,8 +128,8 @@ La Barrioteca Acalencá está disponible como **app Android nativa** en Google P
 
 | Característica | Detalle |
 |---------------|---------|
-| **Tipo** | Trusted Web Activity (TWA) |
-| **URL** | `https://pelotxo.synology.me/barrioteca` |
+| **Tipo** | App nativa (Kotlin + Jetpack Compose) |
+| **API** | `https://pelotxo.synology.me/barrioteca/api-proxy.php` |
 | **minSdk** | 28 (Android 9 o superior) |
 | **targetSdk** | 36 |
 | **Package ID** | `com.lebeche.barrioteca` |
@@ -135,19 +139,18 @@ La Barrioteca Acalencá está disponible como **app Android nativa** en Google P
 
 ### Requisitos
 
-- Android 6.0 o superior
+- Android 9.0 o superior
 - Conexión a internet
-- Chrome instalado (para Trusted Web Activity)
 
 ### Actualizar la app
 
-Cada vez que actualices la app web en el NAS, la app Android reflejará los cambios automáticamente (no necesita actualización manual, ya que carga la web en vivo).
+La app Android v2 es nativa y se comunica con el NAS a través de la API (`api-proxy.php`). Cuando cambies SLiMS o la API, los cambios se reflejan sin tocar la app; para cambios de interfaz o funciones nuevas hay que publicar una versión nueva en Google Play.
 
-Para publicar una nueva versión en Google Play, consulta el `README.md` del repositorio de la app Android (`barrioteca-android-app/`).
+Para publicar una nueva versión, consulta el `README.md` de `barrioteca-android-app-v2/`.
 
 ### Google Play
 
-Ya disponible en Google Play Store. La documentación de publicación está en el repositorio: [acalenca-barrioteca-app-android](https://github.com/jesuscastilla/acalenca-barrioteca-app-android).
+Ya disponible en Google Play Store. La documentación de publicación está en el repositorio: [acalenca-barrioteca-app-android-v2](https://github.com/jesuscastilla/acalenca-barrioteca-app-android-v2).
 
 ### App Store (iOS)
 
@@ -157,7 +160,11 @@ También disponible para iPhone y iPad. Consulta el repositorio: [acalenca-barri
 
 ## Infraestructura
 
-La Barrioteca Acalenca se aloja en un **NAS Synology** que funciona como nube local encriptada y autogestionada, sin dependencia de servidores externos. El acceso al panel de administracion (DSM) se realiza via `https://pelotxo.synology.me:5001`. La app web y SLiMS se sirven por HTTPS estandar (puerto 443).
+La Barrioteca Acalencá se aloja en un **NAS Synology** que funciona como nube local encriptada y autogestionada, sin dependencia de servidores externos. El acceso al panel de administración (DSM) se realiza vía `https://pelotxo.synology.me:5001`. La app web y SLiMS se sirven por HTTPS estándar (puerto 443).
+
+- **Acceso por red local**: SSH en `192.168.50.93` (o `192.168.50.94`), puerto **22**.
+- **Archivos del NAS**: disponibles en `\\192.168.50.94\` desde Windows.
+- **Código local**: cada repositorio está clonado en `G:\GITHUB\`.
 
 ## Repositorios relacionados
 

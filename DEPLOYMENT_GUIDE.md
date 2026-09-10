@@ -33,6 +33,16 @@ Esta guía explica cómo desplegar las dos aplicaciones que componen el sistema:
 
 ---
 
+## Acceso al NAS
+
+Para subir o actualizar los archivos puedes usar cualquiera de estas vías:
+
+- **SSH / SFTP / SCP**: `192.168.50.93` (o `192.168.50.94`), puerto **22**.
+- **SMB (Explorador de Windows)**: `\\192.168.50.94\` (carpetas compartidas del NAS).
+- **File Station** (panel DSM): `https://pelotxo.synology.me:5001`.
+
+Las carpetas web viven en `/volume1/web/` (por ejemplo `/volume1/web/barrioteca/`).
+
 ## Opciones de Despliegue
 
 ### Opción A: Node.js (recomendado para desarrollo y producción ligera)
