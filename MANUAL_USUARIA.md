@@ -29,14 +29,14 @@ La app está diseñada para ser rápida y sencilla, ideal para usar con la cáma
 ### Acceso e Identificación:
 1.  **Entrar**: Abre la app (o la URL de la app web en tu navegador móvil).
 2.  **Identificación**: En la pantalla de inicio, introduce tu **ID de Socia** (el que creamos en el paso anterior) y pulsa **Entrar**.
-3.  **Bienvenida**: Si el ID es correcto, verás un mensaje de bienvenida y tu nombre aparecerá como "Socia Activa".
+3.  **Bienvenida**: Si el ID es correcto, verás la pantalla de inicio con tu nombre y tus libros en préstamo.
 
 ### Cómo realizar un Préstamo:
-1.  **Escanear**: Pulsa el botón grande de **Escanear** en el menú principal, o toca el icono del escáner en la barra inferior.
+1.  **Escanear**: Toca la pestaña **Escanear** en la barra inferior.
 2.  **Seleccionar Modo**: Asegúrate de que el interruptor superior esté en **Préstamo**.
 3.  **Identificar Libro**: 
     *   Apunta con la cámara al código de barras del libro (ISBN o ASIN).
-    *   Si la cámara no lo lee bien, puedes escribir el código manualmente en la sección **Entrada Manual**, o tomar una foto del código pulsando **Foto**.
+    *   Si la cámara no lo lee bien, puedes escribir el código manualmente en el campo **Código de barras / ISBN** y pulsar **Aplicar código**, o tomar una foto del código pulsando **Foto**.
 4.  **Confirmación**: La app mostrará un mensaje de éxito si el libro está disponible y se ha registrado correctamente a tu nombre.
 
 ### Cómo realizar una Devolución:
@@ -61,7 +61,7 @@ Una vez instalada, podrás abrir Barrioteca directamente desde el icono en tu pa
 ## 4. Consultar el Catálogo
 
 Para ver todos los libros disponibles en la barrioteca:
-1.  Ve a la sección **Catálogo** (icono de lupa en la barra inferior).
+1.  Ve a la pestaña **Catálogo** en la barra inferior.
 2.  El sistema cargará automáticamente la lista completa de libros.
 3.  Cada libro muestra su título, autora, ISBN y si está disponible o prestado.
 
@@ -77,7 +77,7 @@ Para ver todos los libros disponibles en la barrioteca:
 ### La cámara no funciona
 - Asegúrate de haber concedido permisos de cámara al navegador.
 - Si el escáner en vivo no funciona, pulsa **Foto** y selecciona una foto del código de barras desde tu galería.
-- Como alternativa, introduce el código manualmente en el campo de entrada y pulsa **Enviar**.
+- Como alternativa, introduce el código manualmente en el campo y pulsa **Aplicar código**.
 
 ### Error al hacer un préstamo o devolución
 - Verifica que la socia activa es la correcta (aparece en la parte superior).

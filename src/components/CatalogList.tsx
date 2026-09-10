@@ -1,238 +1,172 @@
-import React, { useState, useEffect } from 'react';
-import { Book, User, Hash, Loader2, ShoppingCart, X, Search } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { useEffect, useState } from 'react';
 import axios from 'axios';
+import { Loader2, Search, X } from 'lucide-react';
+import type { CatalogBook } from '../types';
 
-interface CatalogBook {
-  id: string;
-  title: string;
-  author: string;
-  isbn: string;
-  status: string;
-  image?: string;
-  notes?: string;
-  item_code?: string;
-}
-
-interface CatalogListProps {
-  onBack: () => void;
+interface Props {
   endpoint: string;
   isLoggedIn: boolean;
-  onBorrow: (isbn: string) => void;
+  onBorrow: (code: string) => Promise<void>;
 }
 
-export const CatalogList: React.FC<CatalogListProps> = ({ onBack, endpoint, isLoggedIn, onBorrow }) => {
-  const [results, setResults] = useState<CatalogBook[]>([]);
+export function CatalogList({ endpoint, isLoggedIn, onBorrow }: Props) {
+  const [books, setBooks] = useState<CatalogBook[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedBook, setSelectedBook] = useState<CatalogBook | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [query, setQuery] = useState('');
+  const [selected, setSelected] = useState<CatalogBook | null>(null);
+  const [borrowing, setBorrowing] = useState(false);
 
   useEffect(() => {
-    loadCatalog();
-  }, []);
+    let active = true;
+    (async () => {
+      setLoading(true);
+      try {
+        const r = await axios.get(`${endpoint}?action=catalog-list`);
+        if (active) setBooks(r.data || []);
+      } catch (e) {
+        console.error('Error al cargar el catálogo:', e);
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [endpoint]);
 
-  const loadCatalog = async () => {
-    setLoading(true);
-    try {
-      const response = await axios.get(`${endpoint}?action=catalog-list`);
-      setResults(response.data || []);
-    } catch (error) {
-      console.error("Error al cargar el catalogo:", error);
-    } finally {
-      setLoading(false);
-    }
+  const filtered = query.trim()
+    ? books.filter(
+        (b) =>
+          b.title.toLowerCase().includes(query.toLowerCase()) ||
+          b.author.toLowerCase().includes(query.toLowerCase()) ||
+          (b.isbn || '').includes(query.trim()) ||
+          (b.item_code || '').includes(query.trim()),
+      )
+    : books;
+
+  const doBorrow = async () => {
+    if (!selected) return;
+    const code = selected.item_code || selected.isbn;
+    if (!code) return;
+    setBorrowing(true);
+    await onBorrow(code);
+    setBorrowing(false);
+    setSelected(null);
   };
 
-  const filteredResults = searchQuery.trim()
-    ? results.filter(b =>
-        b.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        b.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (b.isbn || '').includes(searchQuery.trim()) ||
-        (b.item_code || '').includes(searchQuery.trim())
-      )
-    : results;
-
   return (
-    <div className="space-y-4 sm:space-y-6">
-      <h2 className="text-xl sm:text-2xl font-serif italic mb-4 sm:mb-6 border-b border-gray-200 pb-2">Catalogo de la Biblioteca</h2>
+    <div className="space-y-4">
+      <h2 className="text-2xl italic font-bold">Catálogo de la Biblioteca</h2>
 
-      {/* Busqueda */}
       <div className="relative">
-        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">
           <Search size={16} />
         </div>
         <input
           type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Busca por titulo, autora o ISBN..."
-          className="w-full pl-10 pr-4 py-3 text-sm bg-white rounded-xl border border-gray-200 focus:ring-2 focus:ring-amber-200 focus:border-amber-300 outline-none transition-all"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Busca por título, autora o ISBN"
+          className="w-full pl-10 pr-4 py-3 text-base bg-surface border border-outline rounded-md outline-none focus:ring-2 focus:ring-primary"
         />
-        {searchQuery && (
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-gray-400">
-            {filteredResults.length} de {results.length}
-          </span>
-        )}
       </div>
 
-      <div className="space-y-3 sm:space-y-4">
-        {loading ? (
-          <div className="flex justify-center py-10">
-            <Loader2 className="animate-spin text-amber-500" size={32} />
-          </div>
-        ) : filteredResults.length > 0 ? (
-          filteredResults.map((book, index) => (
-            <motion.div
-              key={book.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.02 }}
-              onClick={() => setSelectedBook(book)}
-              className="bg-white p-3 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex gap-3 sm:gap-4 relative overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+      <p className="text-xs text-on-surface-variant">
+        {filtered.length} de {books.length}
+      </p>
+
+      {loading ? (
+        <div className="flex justify-center py-10">
+          <Loader2 className="animate-spin text-primary" size={32} />
+        </div>
+      ) : filtered.length === 0 ? (
+        <p className="text-sm text-on-surface-variant">El catálogo está vacío.</p>
+      ) : (
+        <div className="space-y-2">
+          {filtered.map((book) => (
+            <button
+              key={book.id || `${book.title}-${book.item_code}`}
+              onClick={() => setSelected(book)}
+              className="w-full bg-surface rounded-lg p-3 flex gap-3 text-left"
             >
               {book.image && (
-                <div className="w-16 h-22 sm:w-20 sm:h-28 shrink-0 bg-gray-100 rounded-lg overflow-hidden border border-gray-200 shadow-sm">
-                  <img src={book.image} alt={book.title} className="w-full h-full object-cover" />
-                </div>
+                <img
+                  src={book.image}
+                  alt={book.title}
+                  className="w-14 h-20 shrink-0 object-cover rounded-sm bg-surface-variant"
+                />
               )}
-
-              <div className="flex-1 flex flex-col gap-1 sm:gap-2 min-w-0">
-                <div className="flex justify-between items-start gap-2">
-                  <h3 className="font-bold text-sm sm:text-base leading-tight">{book.title}</h3>
-                  <span className={`text-[8px] sm:text-[9px] font-bold uppercase tracking-widest px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-lg shrink-0 ${
-                    book.status === 'disponible' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
-                  }`}>
-                    {book.status === 'disponible' ? 'Disp.' : 'Prest.'}
-                  </span>
-                </div>
-
-                <div className="flex flex-col gap-0.5 text-[10px] sm:text-xs text-gray-500">
-                  <div className="flex items-center gap-1.5">
-                    <User size={11} className="sm:w-3 sm:h-3" />
-                    <span className="truncate">{book.author}</span>
-                  </div>
-                  {book.isbn ? (
-                    <div className="flex items-center gap-1.5 text-[9px] sm:text-[10px] opacity-70">
-                      <Hash size={9} className="sm:w-2.5 sm:h-2.5" />
-                      <span className="truncate">ISBN: {book.isbn}</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1.5 text-[9px] sm:text-[10px] opacity-50">
-                      <Hash size={9} />
-                      <span className="truncate">Ej: {book.item_code || book.id}</span>
-                    </div>
-                  )}
-                </div>
-
-                {book.notes && (
-                  <p className="text-[10px] sm:text-[11px] text-gray-400 leading-relaxed mt-0.5 sm:mt-1 line-clamp-2 italic hidden sm:block">
-                    {book.notes.substring(0, 100)}{book.notes.length > 100 ? '...' : ''}
-                  </p>
-                )}
+              <div className="flex-1">
+                <p className="text-base font-bold leading-tight">{book.title}</p>
+                <p className="text-sm text-on-surface-variant">{book.author}</p>
+                <p
+                  className={`text-xs font-bold mt-1 ${
+                    book.status === 'disponible' ? 'text-success' : 'text-error'
+                  }`}
+                >
+                  {book.status === 'disponible' ? 'Disponible' : 'Prestada'}
+                </p>
               </div>
+            </button>
+          ))}
+        </div>
+      )}
 
-              {book.status === 'disponible' && isLoggedIn && (book.item_code || book.isbn) && (
-                <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4">
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onBorrow(book.item_code || book.isbn); }}
-                    className="flex items-center gap-1 bg-ink text-bg text-[9px] sm:text-[10px] font-bold uppercase tracking-widest px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl hover:bg-black transition-all active:scale-95"
-                  >
-                    <ShoppingCart size={11} />
-                    Pedir
-                  </button>
-                </div>
-              )}
-
-              <div className={`absolute left-0 top-0 bottom-0 w-1 ${
-                book.status === 'disponible' ? 'bg-green-400' : 'bg-red-400'
-              }`}></div>
-            </motion.div>
-          ))
-        ) : searchQuery ? (
-          <div className="text-center py-10 opacity-40">
-            <Search size={40} className="mx-auto mb-3" />
-            <p className="text-sm font-serif italic">Sin resultados para "{searchQuery}"</p>
-          </div>
-        ) : (
-          <div className="text-center py-10 opacity-30">
-            <Book size={40} className="mx-auto mb-3" />
-            <p className="text-sm font-serif italic">El catalogo esta vacio.</p>
-          </div>
-        )}
-      </div>
-
-      {/* Modal de detalle */}
-      <AnimatePresence>
-        {selectedBook && (
-          <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setSelectedBook(null)}
+      {selected && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+          onClick={() => setSelected(null)}
+        >
+          <div
+            className="relative bg-surface rounded-lg w-full max-w-lg max-h-[85vh] overflow-y-auto p-5"
+            onClick={(e) => e.stopPropagation()}
           >
-            <motion.div
-              className="relative bg-white rounded-3xl w-full max-w-lg max-h-[85vh] overflow-y-auto shadow-2xl mx-2"
-              initial={{ scale: 0.92, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.92, y: 20 }}
-              transition={{ type: 'spring', stiffness: 320, damping: 28 }}
-              onClick={(e) => e.stopPropagation()}
-            >
+            <div className="flex items-start justify-between">
+              <p
+                className={`text-sm font-bold ${
+                  selected.status === 'disponible' ? 'text-success' : 'text-error'
+                }`}
+              >
+                {selected.status === 'disponible' ? 'Disponible' : 'Prestada'}
+              </p>
               <button
-                onClick={() => setSelectedBook(null)}
-                className="absolute top-3 right-3 p-2 bg-black/10 hover:bg-black/20 rounded-full transition-colors z-10"
+                onClick={() => setSelected(null)}
+                className="p-1 hover:bg-surface-variant rounded-sm"
                 aria-label="Cerrar"
               >
-                <X size={16} />
+                <X size={18} />
               </button>
+            </div>
 
-              <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
-                <div>
-                  <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-1 rounded-lg ${
-                    selectedBook.status === 'disponible' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
-                  }`}>
-                    {selectedBook.status === 'disponible' ? 'Disponible' : 'Prestada'}
-                  </span>
-                </div>
+            {selected.image && (
+              <img
+                src={selected.image}
+                alt={selected.title}
+                className="mt-3 w-24 h-32 object-cover rounded-sm bg-surface-variant"
+              />
+            )}
 
-                <h2 className="text-lg sm:text-xl font-bold leading-tight">{selectedBook.title}</h2>
+            <h3 className="mt-3 text-xl font-bold">{selected.title}</h3>
+            <p className="text-sm text-on-surface-variant">{selected.author}</p>
 
-                <div className="flex flex-col gap-1 text-sm text-gray-500">
-                  <div className="flex items-center gap-1.5">
-                    <User size={13} />
-                    <span>{selectedBook.author}</span>
-                  </div>
-                  {selectedBook.isbn ? (
-                    <div className="text-[11px] opacity-70">ISBN: {selectedBook.isbn}</div>
-                  ) : (
-                    <div className="text-[11px] opacity-50">Ejemplar: {selectedBook.item_code || selectedBook.id}</div>
-                  )}
-                </div>
+            <p className="mt-3 text-sm text-on-surface-variant leading-relaxed">
+              {selected.notes?.trim() || 'Sinopsis no disponible para este libro.'}
+            </p>
 
-                <div>
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Sinopsis</h3>
-                  {selectedBook.notes ? (
-                    <p className="text-sm text-gray-600 leading-relaxed">{selectedBook.notes}</p>
-                  ) : (
-                    <p className="text-sm text-gray-400 italic">Sinopsis no disponible para este libro.</p>
-                  )}
-                </div>
-
-                {selectedBook.status === 'disponible' && isLoggedIn && (selectedBook.item_code || selectedBook.isbn) && (
-                  <button
-                    onClick={() => { onBorrow(selectedBook.item_code || selectedBook.isbn); setSelectedBook(null); }}
-                    className="w-full flex items-center justify-center gap-2 bg-ink text-bg text-sm font-bold uppercase tracking-widest py-3 rounded-xl hover:bg-black transition-all active:scale-95"
-                  >
-                    <ShoppingCart size={16} />
-                    Pedir este libro
-                  </button>
-                )}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            {selected.status === 'disponible' &&
+              isLoggedIn &&
+              (selected.item_code || selected.isbn) && (
+                <button
+                  onClick={doBorrow}
+                  disabled={borrowing}
+                  className="mt-4 w-full bg-primary text-on-primary py-3 rounded-md font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {borrowing ? <Loader2 className="animate-spin" size={18} /> : 'Pedir este libro'}
+                </button>
+              )}
+          </div>
+        </div>
+      )}
     </div>
   );
-};
+}
