@@ -158,6 +158,18 @@ También disponible para iPhone y iPad. Consulta el repositorio: [acalenca-barri
 
 ---
 
+## Instalación en iOS como PWA
+
+Además de la app nativa, la app web es instalable como PWA en iPhone/iPad:
+
+1. Abre `https://pelotxo.synology.me/barrioteca/` en **Safari**
+2. Toca **Compartir** (flecha hacia arriba)
+3. Pulsa **Añadir a pantalla de inicio**
+
+La app web muestra un aviso automático con estas instrucciones, **solo en dispositivos iOS**. En Android la instalación se hace desde Google Play.
+
+---
+
 ## Infraestructura
 
 La Barrioteca Acalencá se aloja en un **NAS Synology** que funciona como nube local encriptada y autogestionada, sin dependencia de servidores externos. El acceso al panel de administración (DSM) se realiza vía `https://pelotxo.synology.me:5001`. La app web y SLiMS se sirven por HTTPS estándar (puerto 443).

@@ -200,6 +200,34 @@ npm run build
 
 Los cambios se verán en los dispositivos de las usuarias la próxima vez que abran la app (recargando la página).
 
+## Sin caché (cambios inmediatos)
+
+La app web está configurada para **no cachear nada**, de modo que al subir un `dist/` nuevo los cambios se ven al recargar, en cualquier dispositivo.
+
+Se consigue con tres capas:
+
+1. **Sin Service Worker** (ya eliminado): no hay cache offline.
+2. **Metas no-cache en `index.html`** (`Cache-Control`, `Pragma`, `Expires`).
+3. **Cabeceras HTTP en el servidor**:
+   - Con **Node.js** (`npm start`): `server.ts` ya envía `Cache-Control: no-store`.
+   - Con **Nginx** (NAS Synology): añade el bloque de `nginx-no-cache.conf` al vhost de `/barrioteca/`.
+
+### Aplicar el no-cache en Nginx (NAS)
+
+El fichero `nginx-no-cache.conf` (raíz del repo) contiene el bloque listo para copiar:
+
+```nginx
+location /barrioteca/ {
+    add_header Cache-Control "no-store, no-cache, must-revalidate";
+    add_header Pragma "no-cache";
+    expires -1;
+}
+```
+
+Por SSH en el NAS (`ssh pelotxo@192.168.50.93`) edita el vhost de Web Station y añade ese bloque dentro del `server { ... }` que sirve `pelotxo.synology.me`. En Synology DSM el fichero suele estar en `/etc/nginx/app.d/` o dentro de la config de Web Station; DSM puede regenerarla al cambiar Web Station, así que conviene re-aplicarlo si se toca esa config.
+
+> Nota: los `assets/*.js|css` llevan hash en el nombre (cada build genera nombres nuevos) y el `index.html` se sirve sin cache, así que no queda nada obsoleto.
+
 ---
 
 > **Nota**: Los archivos `.env` y `api-config.php` contienen información sensible y **nunca** deben subirse al repositorio. Ya están incluidos en `.gitignore`.

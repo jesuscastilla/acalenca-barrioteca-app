@@ -32,6 +32,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
 }
 
 header('Content-Type: application/json; charset=utf-8');
+header('Cache-Control: no-store, no-cache, must-revalidate');
+header('Pragma: no-cache');
+header('Expires: 0');
 
 // ─── Cargar configuración sensible (API keys, etc.) ────
 if (file_exists(__DIR__ . '/api-config.php')) {

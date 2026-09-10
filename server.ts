@@ -36,6 +36,16 @@ async function startServer() {
     next();
   });
 
+  // ─── Sin caché ─────────────────────────────────────────────────
+  // La app es un SPA servido desde el NAS: no se cachea nada para que
+  // los cambios en el NAS se vean al recargar la pagina.
+  app.use((req, res, next) => {
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    next();
+  });
+
   // URL base de la API de SLiMS — configurable mediante variable de entorno
   const SLIMS_API_BASE =
     process.env.SLIMS_API_BASE || "http://localhost/slims/api/index.php";
