@@ -29,6 +29,26 @@ export function SettingsView({ user, onSync, onLogout, syncing }: Props) {
       </button>
 
       <button
+        onClick={() => {
+          if ('caches' in window) {
+            caches.keys().then((names) => {
+              for (const name of names) caches.delete(name);
+            });
+          }
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then((regs) => {
+              for (const reg of regs) reg.unregister();
+            });
+          }
+          window.location.reload();
+        }}
+        className="w-full bg-surface border border-outline/30 text-ink py-3 rounded-md font-semibold flex items-center justify-center gap-2 hover:bg-surface-variant transition-colors"
+      >
+        <RefreshCw size={18} />
+        Recargar app desde el NAS (sin caché)
+      </button>
+
+      <button
         onClick={onLogout}
         className="w-full border border-primary text-primary py-3 rounded-md font-semibold flex items-center justify-center gap-2"
       >

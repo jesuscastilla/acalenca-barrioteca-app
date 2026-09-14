@@ -15,6 +15,7 @@ import { LoginView } from './components/LoginView';
 import { ScanView } from './components/ScanView';
 import { SettingsView } from './components/SettingsView';
 import { IosInstallBanner } from './components/IosInstallBanner';
+import { useVersionCheck } from './lib/useVersionCheck';
 import type {
   ActionType,
   LibraryUser,
@@ -30,6 +31,7 @@ function getEndpoint(): string {
 }
 
 export default function App() {
+  useVersionCheck();
   const [view, setView] = useState<View>('dashboard');
   const [endpoint] = useState<string>(() => getEndpoint());
 

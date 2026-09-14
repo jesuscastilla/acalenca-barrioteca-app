@@ -1,0 +1,25 @@
+# ─────────────────────────────────────────────────────────────
+#  Barrioteca Acalencá — Configuración Anti-Caché Estricta (Apache 2.4)
+#  Evita el almacenamiento en caché en cualquier dispositivo
+# ─────────────────────────────────────────────────────────────
+
+# Deshabilitar ETags para impedir respuestas 304 Not Modified con contenido obsoleto
+FileETag None
+
+<IfModule mod_headers.c>
+    # Cabeceras anti-caché universales en todas las respuestas
+    Header always set Cache-Control "no-store, no-cache, must-revalidate, max-age=0, post-check=0, pre-check=0"
+    Header always set Pragma "no-cache"
+    Header always set Expires "0"
+    Header always unset ETag
+    Header unset ETag
+</IfModule>
+
+# Reglas específicas para HTML, scripts, estilos y metadatos
+<FilesMatch "\.(html|htm|js|css|json|map)$">
+    <IfModule mod_headers.c>
+        Header always set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+        Header always set Pragma "no-cache"
+        Header always set Expires "0"
+    </IfModule>
+</FilesMatch>
