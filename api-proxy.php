@@ -345,6 +345,7 @@ elseif ($path == '/book-metadata') {
                 'title' => $info['title'] ?? null,
                 'authors' => !empty($info['authors']) ? implode(', ', $info['authors']) : null,
                 'image' => $info['imageLinks']['thumbnail'] ?? null,
+                'description' => $info['description'] ?? null,
                 'provider' => 'google'
             ];
         }
@@ -369,9 +370,33 @@ elseif ($path == '/book-metadata') {
                     'title' => $book['title'] ?? null,
                     'authors' => $authors,
                     'image' => $book['cover']['large'] ?? $book['cover']['medium'] ?? null,
+                    'description' => null,
                     'provider' => 'openlibrary'
                 ];
             }
+        }
+    }
+
+    // ── 3) OpenLibrary Covers (solo portada, por ISBN) ──
+    if ($metadata !== null && empty($metadata['image'])) {
+        $coverUrl = "https://covers.openlibrary.org/b/isbn/{$cleanIsbn}-M.jpg";
+        $ch = curl_init($coverUrl);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_NOBODY => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_TIMEOUT => 5,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_USERAGENT => 'Mozilla/5.0'
+        ]);
+        curl_exec($ch);
+        $cCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $cSize = (int) curl_getinfo($ch, CURLINFO_CONTENT_LENGTH_DOWNLOAD);
+        curl_close($ch);
+        // Una portada real pesa varios KB; sin portada devuelve un GIF 1x1 (~43 bytes)
+        if ($cCode === 200 && $cSize > 5000) {
+            $metadata['image'] = $coverUrl;
+            $metadata['provider'] = 'covers_openlibrary';
         }
     }
 

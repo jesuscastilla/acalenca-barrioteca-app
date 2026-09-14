@@ -294,7 +294,7 @@ async function startServer() {
   });
 
   /**
-   * Proxy para obtener metadatos de un libro (Google Books + OpenLibrary)
+   * Proxy para obtener metadatos de un libro (Google Books + OpenLibrary + Covers)
    * GET /api/book-metadata?isbn=XXXXXXXX
    */
   app.get("/api/book-metadata", async (req, res) => {
@@ -309,6 +309,8 @@ async function startServer() {
     const cleanIsbn = (isbn as string).replace(/[-\s]/g, "").trim();
     const apiKey = process.env.GOOGLE_BOOKS_API_KEY || "";
 
+    let result: any = null;
+
     // 1) Google Books
     try {
       let url = `https://www.googleapis.com/books/v1/volumes?q=isbn:${encodeURIComponent(cleanIsbn)}`;
@@ -318,48 +320,64 @@ async function startServer() {
 
       if (gb.data?.items?.length > 0) {
         const info = gb.data.items[0].volumeInfo;
-        return res.json({
-          status: "success",
-          data: {
-            title: info.title || null,
-            authors: info.authors ? info.authors.join(", ") : null,
-            image: info.imageLinks?.thumbnail || null,
-            provider: "google",
-          },
-        });
+        result = {
+          title: info.title || null,
+          authors: info.authors ? info.authors.join(", ") : null,
+          image: info.imageLinks?.thumbnail || null,
+          description: info.description || null,
+          provider: "google",
+        };
       }
     } catch (error: any) {
       console.warn("[book-metadata] Google Books falló:", error.message);
     }
 
     // 2) OpenLibrary (respaldo gratuito, sin clave)
-    try {
-      const olUrl = `https://openlibrary.org/api/books?bibkeys=ISBN:${encodeURIComponent(
-        cleanIsbn
-      )}&format=json&jscmd=data`;
-      const ol = await axios.get(olUrl, { timeout: 8000 });
+    if (!result) {
+      try {
+        const olUrl = `https://openlibrary.org/api/books?bibkeys=ISBN:${encodeURIComponent(
+          cleanIsbn
+        )}&format=json&jscmd=data`;
+        const ol = await axios.get(olUrl, { timeout: 8000 });
 
-      const key = `ISBN:${cleanIsbn}`;
-      const book = ol.data?.[key];
-      if (book) {
-        const authors = Array.isArray(book.authors)
-          ? book.authors.map((a: any) => a.name).filter(Boolean).join(", ")
-          : null;
-        return res.json({
-          status: "success",
-          data: {
+        const key = `ISBN:${cleanIsbn}`;
+        const book = ol.data?.[key];
+        if (book) {
+          const authors = Array.isArray(book.authors)
+            ? book.authors.map((a: any) => a.name).filter(Boolean).join(", ")
+            : null;
+          result = {
             title: book.title || null,
             authors,
             image: book.cover?.large || book.cover?.medium || null,
+            description: null,
             provider: "openlibrary",
-          },
-        });
+          };
+        }
+      } catch (error: any) {
+        console.warn("[book-metadata] OpenLibrary falló:", error.message);
       }
-    } catch (error: any) {
-      console.warn("[book-metadata] OpenLibrary falló:", error.message);
     }
 
-    return res.json({ status: "success", data: null });
+    // 3) OpenLibrary Covers (solo portada, por ISBN)
+    if (result && !result.image) {
+      try {
+        const coverUrl = `https://covers.openlibrary.org/b/isbn/${encodeURIComponent(
+          cleanIsbn
+        )}-M.jpg`;
+        const head = await axios.head(coverUrl, { timeout: 5000 });
+        const len = Number(head.headers["content-length"] || 0);
+        // Una portada real pesa varios KB; sin portada devuelve un GIF 1x1 (~43 bytes)
+        if (len > 5000) {
+          result.image = coverUrl;
+          result.provider = "covers_openlibrary";
+        }
+      } catch (error: any) {
+        console.warn("[book-metadata] OpenLibrary Covers falló:", error.message);
+      }
+    }
+
+    return res.json({ status: "success", data: result });
   });
 
   /**
