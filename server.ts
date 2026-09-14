@@ -359,7 +359,28 @@ async function startServer() {
       }
     }
 
-    // 3) OpenLibrary Covers (solo portada, por ISBN)
+    // 3) CEGAL (portadas de libros españoles, static.cegal.es)
+    if (result && !result.image) {
+      try {
+        const clean13 = cleanIsbn.replace(/[^0-9X]/gi, "");
+        if (clean13.length >= 13) {
+          const dir = clean13.slice(0, 7);
+          const file = clean13.slice(0, 12);
+          const cegalUrl = `https://static.cegal.es/imagenes/marcadas/${dir}/${file}.gif`;
+          const head = await axios.head(cegalUrl, { timeout: 5000 });
+          const len = Number(head.headers["content-length"] || 0);
+          // Una portada real pesa varios KB; sin portada devuelve un placeholder (~4 KB)
+          if (len > 5000) {
+            result.image = cegalUrl;
+            result.provider = "cegal";
+          }
+        }
+      } catch (error: any) {
+        console.warn("[book-metadata] CEGAL falló:", error.message);
+      }
+    }
+
+    // 4) OpenLibrary Covers (solo portada, por ISBN)
     if (result && !result.image) {
       try {
         const coverUrl = `https://covers.openlibrary.org/b/isbn/${encodeURIComponent(

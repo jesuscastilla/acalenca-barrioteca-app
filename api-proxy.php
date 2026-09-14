@@ -377,7 +377,33 @@ elseif ($path == '/book-metadata') {
         }
     }
 
-    // ── 3) OpenLibrary Covers (solo portada, por ISBN) ──
+    // ── 3) CEGAL (portadas de libros españoles, static.cegal.es) ──
+    if ($metadata !== null && empty($metadata['image'])) {
+        $clean13 = preg_replace('/[^0-9X]/i', '', $cleanIsbn);
+        if (strlen($clean13) >= 13) {
+            $cegalUrl = "https://static.cegal.es/imagenes/marcadas/" . substr($clean13, 0, 7) . "/" . substr($clean13, 0, 12) . ".gif";
+            $ch = curl_init($cegalUrl);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_NOBODY => true,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_TIMEOUT => 5,
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_USERAGENT => 'Mozilla/5.0'
+            ]);
+            curl_exec($ch);
+            $cCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $cSize = (int) curl_getinfo($ch, CURLINFO_CONTENT_LENGTH_DOWNLOAD);
+            curl_close($ch);
+            // Una portada real pesa varios KB; sin portada devuelve un placeholder (~4 KB)
+            if ($cCode === 200 && $cSize > 5000) {
+                $metadata['image'] = $cegalUrl;
+                $metadata['provider'] = 'cegal';
+            }
+        }
+    }
+
+    // ── 4) OpenLibrary Covers (solo portada, por ISBN) ──
     if ($metadata !== null && empty($metadata['image'])) {
         $coverUrl = "https://covers.openlibrary.org/b/isbn/{$cleanIsbn}-M.jpg";
         $ch = curl_init($coverUrl);
