@@ -379,6 +379,149 @@ async function startServer() {
     }
   });
 
+  // Compatibilidad con api-proxy.php: el frontend llama con ?action=...
+  // (dev usa VITE_API_ENDPOINT=/api, o ./api-proxy.php si no hay .env).
+  async function dispatchAction(req: any, res: any) {
+    const params: any = { ...(req.query || {}), ...(req.body || {}) };
+    const action = String(params.action || "");
+    const headers = { Accept: "application/json", "User-Agent": "Barrioteca-App/1.0" };
+
+    const verify = async (memberId: string) => {
+      const r = await axios.get(
+        `${SLIMS_API_BASE}?_api_path=/member/${encodeURIComponent(memberId)}/verify`,
+        { headers, timeout: 8000 }
+      );
+      if (r.data?.status === "success" && r.data?.data) {
+        return {
+          status: "success",
+          message: `Socia verificada: ${r.data.data.member_name || memberId}`,
+          data: {
+            member_id: memberId,
+            member_name: r.data.data.member_name || `Socia ${memberId}`,
+            ...r.data.data,
+          },
+        };
+      }
+      return r.data;
+    };
+
+    switch (action) {
+      case "verify-member": {
+        const id = String(params.member_id || "").trim();
+        if (!id) {
+          return res.status(400).json({ status: "error", message: "El ID de la socia es obligatorio." });
+        }
+        try {
+          return res.json(await verify(id));
+        } catch (e: any) {
+          return res.status(e.response?.status || 500).json({
+            status: "error",
+            message: e.response?.data?.message || "Error al verificar a la socia.",
+          });
+        }
+      }
+
+      case "member-loans": {
+        const id = String(params.member_id || "").trim();
+        if (!id) {
+          return res.status(400).json({ status: "error", message: "El ID de la socia es obligatorio." });
+        }
+        try {
+          const r = await axios.get(
+            `${SLIMS_API_BASE}?_api_path=/member/${encodeURIComponent(id)}/loans`,
+            { headers, timeout: 8000 }
+          );
+          return res.json({ status: "success", data: r.data?.data || [] });
+        } catch (e: any) {
+          console.error("[member-loans]", e.message);
+          return res.json({ status: "success", data: [] });
+        }
+      }
+
+      case "catalog-list": {
+        try {
+          const r = await axios.get(
+            `${SLIMS_API_BASE}?_api_path=/biblio/search&q=_&_limit=999`,
+            { headers, timeout: 8000 }
+          );
+          if (Array.isArray(r.data)) {
+            return res.json(
+              r.data.map((it: any) => ({
+                id: it.biblio_id ?? "",
+                title: it.title ?? "",
+                author: it.author || "Autora Desconocida",
+                isbn: it.isbn_issn ?? "",
+                status: it.is_available ? "disponible" : "prestada",
+                image: it.image ?? "",
+                notes: it.notes ?? "",
+                item_code: it.item_code ?? "",
+              }))
+            );
+          }
+          return res.json([]);
+        } catch (e: any) {
+          console.error("[catalog-list]", e.message);
+          return res.json([]);
+        }
+      }
+
+      case "perform-action": {
+        const accion = String(params.accion || "").toLowerCase();
+        const code = String(params.code || params.asin || params.isbn || "").trim();
+        const memberId = String(params.member_id || "").trim();
+        try {
+          if (["verificar_socia", "verificar_socio", "login", "verificar"].includes(accion)) {
+            if (!memberId) {
+              return res.status(400).json({ status: "error", message: "El ID de la socia es obligatorio." });
+            }
+            return res.json(await verify(memberId));
+          }
+          if (["prestamo", "loan"].includes(accion)) {
+            if (!memberId || !code) {
+              return res.status(400).json({
+                status: "error",
+                message: "Faltan datos para el préstamo (ID de socia y código de libro).",
+              });
+            }
+            const r = await axios.post(
+              `${SLIMS_API_BASE}?_api_path=/loan/borrow`,
+              { member_id: memberId, item_code: code },
+              { headers: { ...headers, "Content-Type": "application/json" }, timeout: 8000 }
+            );
+            return res.json(r.data);
+          }
+          if (["devolucion", "return"].includes(accion)) {
+            if (!code) {
+              return res.status(400).json({ status: "error", message: "Falta el código del libro para la devolución." });
+            }
+            const r = await axios.post(
+              `${SLIMS_API_BASE}?_api_path=/loan/return`,
+              { item_code: code },
+              { headers: { ...headers, "Content-Type": "application/json" }, timeout: 8000 }
+            );
+            return res.json(r.data);
+          }
+          return res.status(400).json({ status: "error", message: `Acción desconocida: ${accion}` });
+        } catch (e: any) {
+          return res
+            .status(e.response?.status || 500)
+            .json(
+              e.response?.data || {
+                status: "error",
+                message: `Error al conectar con SLiMS: ${e.message}`,
+              }
+            );
+        }
+      }
+
+      default:
+        return res.status(400).json({ status: "error", message: `Acción no soportada: ${action}` });
+    }
+  }
+
+  app.all("/api", dispatchAction);
+  app.all("/api-proxy.php", dispatchAction);
+
   // Configuración de Vite para desarrollo
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
