@@ -329,29 +329,53 @@ elseif ($path == '/book-metadata') {
         exit;
     }
     $cleanIsbn = preg_replace('/[-\s]/', '', $isbn);
-    $googleApiKey = GOOGLE_BOOKS_API_KEY ?: getenv('GOOGLE_BOOKS_API_KEY') ?: '';
 
+    $metadata = null;
+
+    // ── 1) Google Books ──
+    $googleApiKey = GOOGLE_BOOKS_API_KEY ?: getenv('GOOGLE_BOOKS_API_KEY') ?: '';
     $url = "https://www.googleapis.com/books/v1/volumes?q=isbn:{$cleanIsbn}";
     if ($googleApiKey) $url .= "&key={$googleApiKey}";
-
     list($http_code, $response) = slimRequest($url, 'GET');
-
     if ($http_code === 200) {
         $data = json_decode($response, true);
         if (!empty($data['items'][0]['volumeInfo'])) {
             $info = $data['items'][0]['volumeInfo'];
-            echo json_encode([
-                'status' => 'success',
-                'data' => [
-                    'title' => $info['title'] ?? null,
-                    'authors' => !empty($info['authors']) ? implode(', ', $info['authors']) : null,
-                    'image' => $info['imageLinks']['thumbnail'] ?? null
-                ]
-            ]);
-            exit;
+            $metadata = [
+                'title' => $info['title'] ?? null,
+                'authors' => !empty($info['authors']) ? implode(', ', $info['authors']) : null,
+                'image' => $info['imageLinks']['thumbnail'] ?? null,
+                'provider' => 'google'
+            ];
         }
     }
-    echo json_encode(['status' => 'success', 'data' => null]);
+
+    // ── 2) OpenLibrary (respaldo gratuito, sin clave) ──
+    if ($metadata === null) {
+        $olUrl = "https://openlibrary.org/api/books?bibkeys=ISBN:{$cleanIsbn}&format=json&jscmd=data";
+        list($olCode, $olResp) = slimRequest($olUrl, 'GET');
+        if ($olCode === 200) {
+            $olData = json_decode($olResp, true);
+            $olKey = "ISBN:{$cleanIsbn}";
+            if (!empty($olData[$olKey]) && is_array($olData[$olKey])) {
+                $book = $olData[$olKey];
+                $authors = null;
+                if (!empty($book['authors']) && is_array($book['authors'])) {
+                    $authors = implode(', ', array_map(function ($a) {
+                        return $a['name'] ?? '';
+                    }, $book['authors']));
+                }
+                $metadata = [
+                    'title' => $book['title'] ?? null,
+                    'authors' => $authors,
+                    'image' => $book['cover']['large'] ?? $book['cover']['medium'] ?? null,
+                    'provider' => 'openlibrary'
+                ];
+            }
+        }
+    }
+
+    echo json_encode(['status' => 'success', 'data' => $metadata]);
     exit;
 }
 

@@ -294,7 +294,7 @@ async function startServer() {
   });
 
   /**
-   * Proxy para obtener metadatos de un libro desde Google Books
+   * Proxy para obtener metadatos de un libro (Google Books + OpenLibrary)
    * GET /api/book-metadata?isbn=XXXXXXXX
    */
   app.get("/api/book-metadata", async (req, res) => {
@@ -309,32 +309,57 @@ async function startServer() {
     const cleanIsbn = (isbn as string).replace(/[-\s]/g, "").trim();
     const apiKey = process.env.GOOGLE_BOOKS_API_KEY || "";
 
+    // 1) Google Books
     try {
       let url = `https://www.googleapis.com/books/v1/volumes?q=isbn:${encodeURIComponent(cleanIsbn)}`;
       if (apiKey) url += `&key=${apiKey}`;
 
-      const response = await axios.get(url, { timeout: 5000 });
+      const gb = await axios.get(url, { timeout: 5000 });
 
-      if (response.data?.items?.length > 0) {
-        const info = response.data.items[0].volumeInfo;
+      if (gb.data?.items?.length > 0) {
+        const info = gb.data.items[0].volumeInfo;
         return res.json({
           status: "success",
           data: {
             title: info.title || null,
             authors: info.authors ? info.authors.join(", ") : null,
             image: info.imageLinks?.thumbnail || null,
+            provider: "google",
           },
         });
       }
-
-      return res.json({ status: "success", data: null });
     } catch (error: any) {
-      console.error("[book-metadata] Error:", error.message);
-      return res.status(500).json({
-        status: "error",
-        message: "No se pudieron obtener los metadatos.",
-      });
+      console.warn("[book-metadata] Google Books falló:", error.message);
     }
+
+    // 2) OpenLibrary (respaldo gratuito, sin clave)
+    try {
+      const olUrl = `https://openlibrary.org/api/books?bibkeys=ISBN:${encodeURIComponent(
+        cleanIsbn
+      )}&format=json&jscmd=data`;
+      const ol = await axios.get(olUrl, { timeout: 8000 });
+
+      const key = `ISBN:${cleanIsbn}`;
+      const book = ol.data?.[key];
+      if (book) {
+        const authors = Array.isArray(book.authors)
+          ? book.authors.map((a: any) => a.name).filter(Boolean).join(", ")
+          : null;
+        return res.json({
+          status: "success",
+          data: {
+            title: book.title || null,
+            authors,
+            image: book.cover?.large || book.cover?.medium || null,
+            provider: "openlibrary",
+          },
+        });
+      }
+    } catch (error: any) {
+      console.warn("[book-metadata] OpenLibrary falló:", error.message);
+    }
+
+    return res.json({ status: "success", data: null });
   });
 
   /**
