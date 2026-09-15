@@ -129,7 +129,7 @@ La Barrioteca Acalencá está disponible como **app Android nativa** en Google P
 | Característica | Detalle |
 |---------------|---------|
 | **Tipo** | App nativa (Kotlin + Jetpack Compose) |
-| **API** | `https://pelotxo.synology.me/barrioteca/api-proxy.php` |
+| **API** | `https://corrientelebeche.es/barrioteca/api-proxy.php` |
 | **minSdk** | 28 (Android 9 o superior) |
 | **targetSdk** | 36 |
 | **Package ID** | `com.lebeche.barrioteca` |
@@ -162,7 +162,7 @@ También disponible para iPhone y iPad. Consulta el repositorio: [acalenca-barri
 
 Además de la app nativa, la app web es instalable como PWA en iPhone/iPad:
 
-1. Abre `https://pelotxo.synology.me/barrioteca/` en **Safari**
+1. Abre `https://corrientelebeche.es/barrioteca/` en **Safari**
 2. Toca **Compartir** (flecha hacia arriba)
 3. Pulsa **Añadir a pantalla de inicio**
 
