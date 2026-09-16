@@ -1,5 +1,4 @@
 const DISMISS_KEY = 'pwa_install_dismissed';
-const PLAY_DISMISS_KEY = 'pwa_play_dismissed';
 
 /** URL de la app nativa de la Barrioteca en Google Play. */
 export const PLAY_STORE_URL =
@@ -47,24 +46,6 @@ export function isInstallDismissed(): boolean {
 export function dismissInstall(): void {
   try {
     localStorage.setItem(DISMISS_KEY, '1');
-  } catch {
-    /* almacenamiento no disponible */
-  }
-}
-
-/** True si la usuaria ya descartó el banner de Google Play. */
-export function isPlayDismissed(): boolean {
-  try {
-    return localStorage.getItem(PLAY_DISMISS_KEY) === '1';
-  } catch {
-    return false;
-  }
-}
-
-/** Guarda el descarte del banner de Google Play para no volver a mostrarlo. */
-export function dismissPlay(): void {
-  try {
-    localStorage.setItem(PLAY_DISMISS_KEY, '1');
   } catch {
     /* almacenamiento no disponible */
   }

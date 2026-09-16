@@ -1,28 +1,18 @@
 import { useEffect, useState } from 'react';
 import { Download, Play, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import {
-  PLAY_STORE_URL,
-  dismissPlay,
-  isAndroid,
-  isPlayDismissed,
-  isStandalone,
-} from '../lib/platform';
-
-const SHOW_DELAY_MS = 4000;
+import { PLAY_STORE_URL, isAndroid, isStandalone } from '../lib/platform';
 
 /**
  * Banner de instalación exclusivo para Android: enlaza a la app nativa en
- * Google Play. No se muestra en iOS, escritorio, app instalada (standalone)
- * ni si ya se descartó.
+ * Google Play. Se muestra de inmediato y siempre, en cualquier móvil Android
+ * (no en iOS, escritorio ni dentro de la app ya instalada).
  */
 export function AndroidInstallBanner() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (!isAndroid() || isStandalone() || isPlayDismissed()) return;
-    const t = setTimeout(() => setVisible(true), SHOW_DELAY_MS);
-    return () => clearTimeout(t);
+    if (isAndroid() && !isStandalone()) setVisible(true);
   }, []);
 
   // Si la PWA pasa a modo standalone (recién instalada), se oculta.
@@ -36,10 +26,7 @@ export function AndroidInstallBanner() {
     return () => mq.removeEventListener?.('change', onChange);
   }, []);
 
-  const close = () => {
-    dismissPlay();
-    setVisible(false);
-  };
+  const close = () => setVisible(false);
 
   return (
     <AnimatePresence>
