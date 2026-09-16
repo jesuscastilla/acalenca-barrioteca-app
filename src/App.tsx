@@ -15,6 +15,7 @@ import { LoginView } from './components/LoginView';
 import { ScanView } from './components/ScanView';
 import { SettingsView } from './components/SettingsView';
 import { IosInstallBanner } from './components/IosInstallBanner';
+import { AndroidInstallBanner } from './components/AndroidInstallBanner';
 import { useVersionCheck } from './lib/useVersionCheck';
 import type {
   ActionType,
@@ -224,6 +225,7 @@ export default function App() {
       <div className="min-h-screen bg-cream text-ink font-sans">
         <LoginView onLogin={handleLogin} loginError={loginError} isLoggingIn={isLoggingIn} />
         <IosInstallBanner />
+        <AndroidInstallBanner />
       </div>
     );
   }
@@ -304,6 +306,7 @@ export default function App() {
       </AnimatePresence>
 
       <IosInstallBanner />
+      <AndroidInstallBanner />
     </div>
   );
 }
