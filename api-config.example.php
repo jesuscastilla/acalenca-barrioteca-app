@@ -15,6 +15,6 @@ define('GOOGLE_BOOKS_API_KEY', '');
 
 // URL base de la API de SLiMS en tu NAS Synology
 // En desarrollo local:       http://localhost/slims/api/index.php
-// En producción con dominio: https://TU-DOMINIO.synology.me/slims/api/index.php
+// En producción con dominio: https://www.corrientelebeche.es/slims/api/index.php
 define('SLIMS_API_BASE', 'http://localhost/slims/api/index.php');
 // ⬆️  Cambia esta URL según tu entorno de despliegue
