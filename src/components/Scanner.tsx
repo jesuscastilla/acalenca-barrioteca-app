@@ -265,3 +265,5 @@ export const Scanner: React.FC<ScannerProps> = ({ onResult }) => {
     </div>
   );
 };
+
+export default Scanner;

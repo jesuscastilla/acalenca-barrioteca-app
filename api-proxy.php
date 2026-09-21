@@ -79,6 +79,33 @@ function slimRequest($url, $method = 'GET', $body = null) {
     return [$http_code, $response];
 }
 
+/**
+ * Micro-caché en disco del proxy para respuestas caras (p. ej. el catálogo
+ * completo). Evita que cada usuaria dispare la consulta pesada de SLiMS en
+ * cada carga. Se invalida al hacer préstamos/devoluciones.
+ */
+function proxyCacheGet($key, $ttl) {
+    $file = __DIR__ . '/cache/' . $key . '.json';
+    if (is_file($file) && (time() - filemtime($file)) < $ttl) {
+        $cached = file_get_contents($file);
+        if ($cached !== false) return $cached;
+    }
+    return null;
+}
+
+function proxyCacheSet($key, $data) {
+    $dir = __DIR__ . '/cache';
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0755, true);
+    }
+    @file_put_contents($dir . '/' . $key . '.json', $data, LOCK_EX);
+}
+
+function proxyCacheClear($key) {
+    $file = __DIR__ . '/cache/' . $key . '.json';
+    if (is_file($file)) @unlink($file);
+}
+
 // ─── Obtener la acción a ejecutar (ROBUSTO — compatible con Nginx Synology) ────
 $qs = $_SERVER['QUERY_STRING'] ?? '';
 
@@ -215,6 +242,9 @@ elseif ($path == '/perform-action') {
             echo json_encode(['status' => 'error', 'message' => 'Respuesta no válida del servidor SLiMS.']);
             exit;
         }
+        if ($http_code >= 200 && $http_code < 300) {
+            proxyCacheClear('catalog_list');
+        }
         http_response_code($http_code);
         echo json_encode($data ?: ['status' => 'error', 'message' => 'Error al procesar el préstamo.']);
         exit;
@@ -238,6 +268,9 @@ elseif ($path == '/perform-action') {
             http_response_code(500);
             echo json_encode(['status' => 'error', 'message' => 'Respuesta no válida del servidor SLiMS.']);
             exit;
+        }
+        if ($http_code >= 200 && $http_code < 300) {
+            proxyCacheClear('catalog_list');
         }
         http_response_code($http_code);
         echo json_encode($data ?: ['status' => 'error', 'message' => 'Error al procesar la devolución.']);
@@ -280,11 +313,22 @@ elseif ($path == '/catalog-proxy') {
 }
 
 elseif ($path == '/catalog-list') {
-    // Listar toda la bibliografía (sin filtro). El comodín _ fuerza a SLiMS a devolver todos los títulos.
+    // Listar toda la bibliografía (sin filtro), con micro-caché en disco para
+    // no disparar la consulta pesada de SLiMS en cada carga por usuaria.
+    // NOTA: no devolvemos 'notes' (sinopsis) aquí; se obtiene bajo demanda con
+    // action=book-detail para que el JSON del listado sea pequeño.
+    $cacheTtl = 60; // segundos
+    $cached = proxyCacheGet('catalog_list', $cacheTtl);
+    if ($cached !== null) {
+        echo $cached;
+        exit;
+    }
+
     $target_url = SLIMS_API_BASE . "?_api_path=/biblio/search&q=_&_limit=999";
     list($http_code, $response) = slimRequest($target_url, 'GET');
 
     $data = json_decode($response, true);
+    $results = [];
     if (is_array($data)) {
         $results = array_map(function($item) {
             return [
@@ -294,13 +338,43 @@ elseif ($path == '/catalog-list') {
                 'isbn' => $item['isbn_issn'] ?? '',
                 'status' => ($item['is_available'] ?? false) ? "disponible" : "prestada",
                 'image' => $item['image'] ?? '',
-                'notes' => $item['notes'] ?? '',
                 'item_code' => $item['item_code'] ?? '',
             ];
         }, $data);
-        echo json_encode($results);
+    }
+    $json = json_encode($results);
+    proxyCacheSet('catalog_list', $json);
+    echo $json;
+    exit;
+}
+
+elseif ($path == '/book-detail') {
+    // Detalle de un único título (sinopsis completa + portada) para el modal.
+    $id = preg_replace('/[^0-9]/', '', $_GET['id'] ?? '');
+    if ($id === '') {
+        http_response_code(400);
+        echo json_encode(['status' => 'error', 'message' => 'ID de libro requerido']);
+        exit;
+    }
+
+    $target_url = SLIMS_API_BASE . "?_api_path=/biblio/" . urlencode($id);
+    list($http_code, $response) = slimRequest($target_url, 'GET');
+
+    $data = json_decode($response, true);
+    if (is_array($data) && !empty($data)) {
+        echo json_encode(['status' => 'success', 'data' => [
+            'id' => $data['biblio_id'] ?? $id,
+            'title' => $data['title'] ?? '',
+            'notes' => $data['notes'] ?? '',
+            'image' => $data['image'] ?? '',
+        ]]);
     } else {
-        echo json_encode([]);
+        echo json_encode(['status' => 'success', 'data' => [
+            'id' => $id,
+            'title' => '',
+            'notes' => 'Sinopsis no disponible para este libro.',
+            'image' => '',
+        ]]);
     }
     exit;
 }

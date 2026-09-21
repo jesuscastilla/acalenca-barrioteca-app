@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { ArrowLeft, Loader2, QrCode } from 'lucide-react';
-import { Scanner } from './Scanner';
+const Scanner = lazy(() => import('./Scanner'));
 
 interface Props {
   onLogin: (term: string) => void;
@@ -30,12 +30,14 @@ export function LoginView({ onLogin, loginError, isLoggingIn }: Props) {
           </button>
         </div>
         <div className="flex-1">
-          <Scanner
-            onResult={(code) => {
-              setScanning(false);
-              onLogin(code);
-            }}
-          />
+          <Suspense fallback={<div className="p-6 text-center text-on-surface-variant">Cargando escáner…</div>}>
+            <Scanner
+              onResult={(code) => {
+                setScanning(false);
+                onLogin(code);
+              }}
+            />
+          </Suspense>
         </div>
       </div>
     );

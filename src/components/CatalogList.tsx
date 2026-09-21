@@ -14,7 +14,10 @@ export function CatalogList({ endpoint, isLoggedIn, onBorrow }: Props) {
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState<CatalogBook | null>(null);
+  const [detail, setDetail] = useState<{ notes?: string; image?: string } | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
   const [borrowing, setBorrowing] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(50);
 
   useEffect(() => {
     let active = true;
@@ -34,6 +37,10 @@ export function CatalogList({ endpoint, isLoggedIn, onBorrow }: Props) {
     };
   }, [endpoint]);
 
+  useEffect(() => {
+    setVisibleCount(50);
+  }, [query]);
+
   const filtered = query.trim()
     ? books.filter(
         (b) =>
@@ -44,6 +51,8 @@ export function CatalogList({ endpoint, isLoggedIn, onBorrow }: Props) {
       )
     : books;
 
+  const shown = filtered.slice(0, visibleCount);
+
   const doBorrow = async () => {
     if (!selected) return;
     const code = selected.item_code || selected.isbn;
@@ -52,6 +61,22 @@ export function CatalogList({ endpoint, isLoggedIn, onBorrow }: Props) {
     await onBorrow(code);
     setBorrowing(false);
     setSelected(null);
+  };
+
+  const openDetail = async (book: CatalogBook) => {
+    setSelected(book);
+    setDetail(null);
+    setDetailLoading(true);
+    try {
+      const r = await axios.get(
+        `${endpoint}?action=book-detail&id=${encodeURIComponent(book.id)}`,
+      );
+      setDetail(r.data?.data || null);
+    } catch {
+      setDetail(null);
+    } finally {
+      setDetailLoading(false);
+    }
   };
 
   return (
@@ -83,16 +108,20 @@ export function CatalogList({ endpoint, isLoggedIn, onBorrow }: Props) {
         <p className="text-sm text-on-surface-variant">El catálogo está vacío.</p>
       ) : (
         <div className="space-y-2">
-          {filtered.map((book) => (
+          {shown.map((book) => (
             <button
               key={book.id || `${book.title}-${book.item_code}`}
-              onClick={() => setSelected(book)}
+              onClick={() => openDetail(book)}
               className="w-full bg-surface rounded-lg p-3 flex gap-3 text-left"
             >
               {book.image && (
                 <img
                   src={book.image}
                   alt={book.title}
+                  loading="lazy"
+                  decoding="async"
+                  width={56}
+                  height={80}
                   className="w-14 h-20 shrink-0 object-cover rounded-sm bg-surface-variant"
                 />
               )}
@@ -109,6 +138,14 @@ export function CatalogList({ endpoint, isLoggedIn, onBorrow }: Props) {
               </div>
             </button>
           ))}
+          {filtered.length > visibleCount && (
+            <button
+              onClick={() => setVisibleCount((v) => v + 100)}
+              className="w-full py-3 text-sm font-semibold text-primary hover:bg-primary-container/40 rounded-md"
+            >
+              Cargar más ({filtered.length - visibleCount} restantes)
+            </button>
+          )}
         </div>
       )}
 
@@ -138,10 +175,14 @@ export function CatalogList({ endpoint, isLoggedIn, onBorrow }: Props) {
               </button>
             </div>
 
-            {selected.image && (
+            {(detail?.image || selected.image) && (
               <img
-                src={selected.image}
+                src={detail?.image || selected.image}
                 alt={selected.title}
+                loading="lazy"
+                decoding="async"
+                width={96}
+                height={128}
                 className="mt-3 w-24 h-32 object-cover rounded-sm bg-surface-variant"
               />
             )}
@@ -150,7 +191,11 @@ export function CatalogList({ endpoint, isLoggedIn, onBorrow }: Props) {
             <p className="text-sm text-on-surface-variant">{selected.author}</p>
 
             <p className="mt-3 text-sm text-on-surface-variant leading-relaxed">
-              {selected.notes?.trim() || 'Sinopsis no disponible para este libro.'}
+              {detailLoading
+                ? 'Cargando sinopsis…'
+                : detail?.notes?.trim() ||
+                  selected.notes?.trim() ||
+                  'Sinopsis no disponible para este libro.'}
             </p>
 
             {selected.status === 'disponible' &&

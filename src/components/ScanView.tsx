@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { ArrowLeft, Scan } from 'lucide-react';
 import type { ActionType, TransactionLog } from '../types';
-import { Scanner } from './Scanner';
+const Scanner = lazy(() => import('./Scanner'));
 
 interface Props {
   action: ActionType;
@@ -28,12 +28,14 @@ export function ScanView({ action, onSelectAction, logs, onClearLogs, onResult, 
             <ArrowLeft size={24} />
           </button>
         </div>
-        <Scanner
-          onResult={(code) => {
-            setScanning(false);
-            onResult(code);
-          }}
-        />
+        <Suspense fallback={<div className="p-6 text-center text-on-surface-variant">Cargando escáner…</div>}>
+          <Scanner
+            onResult={(code) => {
+              setScanning(false);
+              onResult(code);
+            }}
+          />
+        </Suspense>
       </div>
     );
   }

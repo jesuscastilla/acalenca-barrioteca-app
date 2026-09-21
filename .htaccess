@@ -1,25 +1,32 @@
 # ─────────────────────────────────────────────────────────────
-#  Barrioteca Acalencá — Configuración Anti-Caché Estricta (Apache 2.4)
-#  Evita el almacenamiento en caché en cualquier dispositivo
+#  Barrioteca Acalencá — Política de caché por tipo de recurso
+#  (Apache 2.4 — respaldo si el backend es Apache)
+#
+#  • index.html, version.json y todo lo PHP se sirve SIN caché
+#    (los cambios y el estado de préstamo se ven al instante).
+#  • Los assets compilados por Vite llevan hash en el nombre
+#    (index-<hash>.js / .css) → son inmutables y sí se cachean 1 año.
 # ─────────────────────────────────────────────────────────────
 
 # Deshabilitar ETags para impedir respuestas 304 Not Modified con contenido obsoleto
 FileETag None
 
 <IfModule mod_headers.c>
-    # Cabeceras anti-caché universales en todas las respuestas
-    Header always set Cache-Control "no-store, no-cache, must-revalidate, max-age=0, post-check=0, pre-check=0"
+    # Por defecto: no cachear (HTML, PHP, JSON dinámico, version.json)
+    Header always set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
     Header always set Pragma "no-cache"
     Header always set Expires "0"
     Header always unset ETag
     Header unset ETag
 </IfModule>
 
-# Reglas específicas para HTML, scripts, estilos y metadatos
-<FilesMatch "\.(html|htm|js|css|json|map)$">
+# Assets versionados (hash en el nombre) → cacheables de forma segura.
+# NO rompen la actualización instantánea: nuevo build = nuevo hash = nueva URL.
+# Excluimos sw.js (el Service Worker "killer" debe poder refrescarse).
+<FilesMatch "^(?!sw\.js$).*\.(js|css|woff2?|woff|ttf)$">
     <IfModule mod_headers.c>
-        Header always set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
-        Header always set Pragma "no-cache"
-        Header always set Expires "0"
+        Header always set Cache-Control "public, max-age=31536000, immutable"
+        Header always unset Pragma
+        Header always unset Expires
     </IfModule>
 </FilesMatch>

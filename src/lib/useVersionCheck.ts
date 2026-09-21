@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 declare const __APP_BUILD_TIME__: number;
 
 const currentBuildTime = typeof __APP_BUILD_TIME__ !== 'undefined' ? __APP_BUILD_TIME__ : 0;
-const CHECK_INTERVAL_MS = 45000; // 45 segundos
+const CHECK_INTERVAL_MS = 300000; // 5 minutos (menos peticiones por cliente bajo concurrencia)
 
 /**
  * Hook para comprobar si hay una nueva versión desplegada en el servidor.
