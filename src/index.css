@@ -1,8 +1,19 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,100..900;1,100..900&display=swap');
 @import "tailwindcss";
 
+@font-face{font-family:"Courgette";src:url("./assets/fonts/Courgette-Regular.ttf") format("truetype");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"Garet";src:url("./assets/fonts/Garet-Book.ttf") format("truetype");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"Garet";src:url("./assets/fonts/Garet-Heavy.ttf") format("truetype");font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:"Open Sans";src:url("./assets/fonts/OpenSans-Regular.ttf") format("truetype");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"Open Sans";src:url("./assets/fonts/OpenSans-Italic.ttf") format("truetype");font-weight:400;font-style:italic;font-display:swap}
+@font-face{font-family:"Open Sans";src:url("./assets/fonts/OpenSans-Semibold.ttf") format("truetype");font-weight:600;font-style:normal;font-display:swap}
+@font-face{font-family:"Open Sans";src:url("./assets/fonts/OpenSans-Bold.ttf") format("truetype");font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:"Open Sans";src:url("./assets/fonts/OpenSans-BoldItalic.ttf") format("truetype");font-weight:700;font-style:italic;font-display:swap}
+@font-face{font-family:"Open Sans";src:url("./assets/fonts/OpenSans-ExtraBold.ttf") format("truetype");font-weight:800;font-style:normal;font-display:swap}
+
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Open Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Garet", "Open Sans", ui-sans-serif, sans-serif;
+  --font-brand: "Courgette", cursive;
 
   --color-cream: #F5F5F0;
   --color-ink: #141414;
@@ -24,6 +35,10 @@
 }
 
 @layer base {
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+  }
+
   body {
     @apply bg-cream text-ink;
     padding-bottom: env(safe-area-inset-bottom);
